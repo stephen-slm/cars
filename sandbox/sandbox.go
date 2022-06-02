@@ -98,7 +98,7 @@ type Response struct {
 	TestStatus SandboxTestResult
 }
 
-type DefaultSandbox struct {
+type SandboxContainer struct {
 	containerID string
 	status      SandboxStatus
 	events      []events.Message
@@ -107,8 +107,8 @@ type DefaultSandbox struct {
 	request Request
 }
 
-func NewDefaultSandbox(request Request, client *client.Client) DefaultSandbox {
-	return DefaultSandbox{
+func NewDefaultSandbox(request Request, client *client.Client) SandboxContainer {
+	return SandboxContainer{
 		containerID: "",
 		status:      NotRan,
 		client:      client,
@@ -120,7 +120,7 @@ func NewDefaultSandbox(request Request, client *client.Client) DefaultSandbox {
 // Prepare the sandbox environment for execution, creates the temp file locations, writes down
 // / the source code file and ensures that all properties are correct and valid for execution.
 // / If all is prepared properly, no error will be returned.
-func (d DefaultSandbox) Prepare(_ context.Context) error {
+func (d SandboxContainer) Prepare(_ context.Context) error {
 	// Create the temporary directory that will be used for storing the source code, standard
 	// input and then the location in which the compiler will write the standard output and the
 	// standard error output. After the data is written and returned, the location will be
@@ -192,7 +192,7 @@ func (d DefaultSandbox) Prepare(_ context.Context) error {
 // Execute the sandbox environment, building up the arguments, creating the container and starting
 // it. Everything after this point will be based on the stream of data being produced by the
 // docker stream.
-func (d DefaultSandbox) Execute(ctx context.Context) error {
+func (d SandboxContainer) Execute(ctx context.Context) error {
 	language := d.request.Compiler.language
 	compilerEntry := d.request.Compiler.compiler
 	compileBinary := ""
@@ -247,7 +247,7 @@ func (d DefaultSandbox) Execute(ctx context.Context) error {
 }
 
 // Cleanup will remove all the files related to this container on call.
-func (d DefaultSandbox) Cleanup() error {
+func (d SandboxContainer) Cleanup() error {
 	if d.request.Path != "" {
 		return os.RemoveAll(d.request.Path)
 	}
@@ -255,7 +255,7 @@ func (d DefaultSandbox) Cleanup() error {
 }
 
 // Loads the response of the sandbox execution, the standard output.
-func (d DefaultSandbox) getSandboxStandardOutput() ([]string, error) {
+func (d SandboxContainer) getSandboxStandardOutput() ([]string, error) {
 	path := filepath.Join(d.request.Path, d.request.Compiler.StandardOutputFile)
 	file, err := os.Open(path)
 
@@ -280,7 +280,7 @@ func (d DefaultSandbox) getSandboxStandardOutput() ([]string, error) {
 }
 
 // Loads the response of the sandbox error execution, the standard error output.
-func (d DefaultSandbox) getSandboxStandardErrorOutput() ([]string, error) {
+func (d SandboxContainer) getSandboxStandardErrorOutput() ([]string, error) {
 	path := filepath.Join(d.request.Path, d.request.Compiler.StandardErrorFile)
 	file, err := os.Open(path)
 
@@ -302,12 +302,12 @@ func (d DefaultSandbox) getSandboxStandardErrorOutput() ([]string, error) {
 	return lines, nil
 }
 
-func (d DefaultSandbox) AddDockerEventMessage(event events.Message) {
+func (d SandboxContainer) AddDockerEventMessage(event events.Message) {
 	d.UpdateStatusFromDockerEvent(event.Status)
 	d.events = append(d.events, event)
 }
 
-func (d DefaultSandbox) UpdateStatusFromDockerEvent(status string) {
+func (d SandboxContainer) UpdateStatusFromDockerEvent(status string) {
 	switch status {
 	case "create":
 		d.handleContainerCreated()
@@ -331,22 +331,22 @@ func (d DefaultSandbox) UpdateStatusFromDockerEvent(status string) {
 }
 
 // Handles the case in which the given container has been created.
-func (d DefaultSandbox) handleContainerCreated() {
+func (d SandboxContainer) handleContainerCreated() {
 	d.status = Created
 }
 
 // Handles the case in which the given container has been started.
-func (d DefaultSandbox) handleContainerStarted() {
+func (d SandboxContainer) handleContainerStarted() {
 	d.status = Running
 }
 
 // Handles the case in which the given container is being killed.
-func (d DefaultSandbox) handleContainerKilling() {
+func (d SandboxContainer) handleContainerKilling() {
 	d.status = Killing
 }
 
 // Handles the case in which the given container has been killed.
-func (d DefaultSandbox) handleContainerKilled() {
+func (d SandboxContainer) handleContainerKilled() {
 	// Ensure that the status is the last thing updated, since d will trigger the
 	// event, and we don't want the worker service knowing we are "killed" until
 	// ready.
@@ -354,13 +354,13 @@ func (d DefaultSandbox) handleContainerKilled() {
 }
 
 // Handles the case in which the given container has been removed.
-func (d DefaultSandbox) handleContainerRemoved() {
+func (d SandboxContainer) handleContainerRemoved() {
 	d.status = Finished
 }
 
 // GetResponse - Get the response of the sandbox, can only be called once in removed state.
-func (d DefaultSandbox) GetResponse() Response {
-	defer func(d DefaultSandbox) {
+func (d SandboxContainer) GetResponse() Response {
+	defer func(d SandboxContainer) {
 		_ = d.Cleanup()
 	}(d)
 
