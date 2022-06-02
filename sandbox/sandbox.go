@@ -107,8 +107,8 @@ type SandboxContainer struct {
 	request Request
 }
 
-func NewDefaultSandbox(request Request, client *client.Client) SandboxContainer {
-	return SandboxContainer{
+func NewSandboxContainer(request Request, client *client.Client) *SandboxContainer {
+	return &SandboxContainer{
 		containerID: "",
 		status:      NotRan,
 		client:      client,
@@ -117,10 +117,25 @@ func NewDefaultSandbox(request Request, client *client.Client) SandboxContainer 
 	}
 }
 
-// Prepare the sandbox environment for execution, creates the temp file locations, writes down
+// Run the sandbox container with the given configuration options.
+func (d SandboxContainer) Run(ctx context.Context) error {
+	if err := d.prepare(ctx); err != nil {
+		_ = d.cleanup()
+		return err
+	}
+
+	if err := d.execute(ctx); err != nil {
+		_ = d.cleanup()
+		return err
+	}
+
+	return nil
+}
+
+// prepare the sandbox environment for execution, creates the temp file locations, writes down
 // / the source code file and ensures that all properties are correct and valid for execution.
 // / If all is prepared properly, no error will be returned.
-func (d SandboxContainer) Prepare(_ context.Context) error {
+func (d SandboxContainer) prepare(_ context.Context) error {
 	// Create the temporary directory that will be used for storing the source code, standard
 	// input and then the location in which the compiler will write the standard output and the
 	// standard error output. After the data is written and returned, the location will be
@@ -189,10 +204,10 @@ func (d SandboxContainer) Prepare(_ context.Context) error {
 	return ioutil.WriteFile(filepath.Join(d.request.Path, "script.sh"), bytesRead, 0644)
 }
 
-// Execute the sandbox environment, building up the arguments, creating the container and starting
+// execute the sandbox environment, building up the arguments, creating the container and starting
 // it. Everything after this point will be based on the stream of data being produced by the
 // docker stream.
-func (d SandboxContainer) Execute(ctx context.Context) error {
+func (d SandboxContainer) execute(ctx context.Context) error {
 	language := d.request.Compiler.language
 	compilerEntry := d.request.Compiler.compiler
 	compileBinary := ""
@@ -246,8 +261,8 @@ func (d SandboxContainer) Execute(ctx context.Context) error {
 	return d.client.ContainerStart(ctx, d.containerID, types.ContainerStartOptions{})
 }
 
-// Cleanup will remove all the files related to this container on call.
-func (d SandboxContainer) Cleanup() error {
+// cleanup will remove all the files related to this container on call.
+func (d SandboxContainer) cleanup() error {
 	if d.request.Path != "" {
 		return os.RemoveAll(d.request.Path)
 	}
@@ -303,11 +318,11 @@ func (d SandboxContainer) getSandboxStandardErrorOutput() ([]string, error) {
 }
 
 func (d SandboxContainer) AddDockerEventMessage(event events.Message) {
-	d.UpdateStatusFromDockerEvent(event.Status)
+	d.updateStatusFromDockerEvent(event.Status)
 	d.events = append(d.events, event)
 }
 
-func (d SandboxContainer) UpdateStatusFromDockerEvent(status string) {
+func (d SandboxContainer) updateStatusFromDockerEvent(status string) {
 	switch status {
 	case "create":
 		d.handleContainerCreated()
@@ -361,7 +376,7 @@ func (d SandboxContainer) handleContainerRemoved() {
 // GetResponse - Get the response of the sandbox, can only be called once in removed state.
 func (d SandboxContainer) GetResponse() Response {
 	defer func(d SandboxContainer) {
-		_ = d.Cleanup()
+		_ = d.cleanup()
 	}(d)
 
 	if d.status == TimeLimitExceeded || d.status == MemoryConstraintExceeded {
