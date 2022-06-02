@@ -11,6 +11,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
 
 	"compile-and-run-sandbox/sandbox/unix"
@@ -20,7 +21,8 @@ type SandboxTestResult int
 type SandboxStatus int
 
 const (
-	TestFailed SandboxTestResult = iota
+	NoTest SandboxTestResult = iota
+	TestFailed
 	TestPassed
 )
 
@@ -29,25 +31,15 @@ const (
 	// should only be updated if and when the test has run and exceeded or ran and failed.
 	NotRan SandboxStatus = iota
 
-	// In pending state, e.g it as yet to begin executing.
-	Pending
-
-	// In running state, the sandbox is currently running.
+	Created
 	Running
-
-	// The test cas has run and the expected output has been met by the actual output result.
+	Killing
+	Killed
 	Finished
 
-	// The sandbox exceeded its memory constraint limitations.
 	MemoryConstraintExceeded
-
-	// The sandbox exceeded its time limit constraints.
 	TimeLimitExceeded
-
-	// container failed for a non test related problem
 	ProvidedTestFailed
-
-	// something not defined went wrong causing a fault
 	NonDeterministicError
 )
 
@@ -63,9 +55,6 @@ type Test struct {
 	// the data has been returned. This is what we are going to ensure the given test case matches
 	// before providing a result.
 	ExpectedStdoutData []string
-	// The output result of the test case for the given test. With support for marking the test
-	// as not yet ran.
-	result SandboxStatus
 }
 
 type Request struct {
@@ -104,18 +93,28 @@ type Response struct {
 
 	// The given status of the sandbox.
 	Status SandboxStatus
+
+	// The result for the test if it was provided.
+	TestStatus SandboxTestResult
 }
 
 type DefaultSandbox struct {
 	containerID string
 	status      SandboxStatus
+	events      []events.Message
 
 	client  *client.Client
 	request Request
 }
 
 func NewDefaultSandbox(request Request, client *client.Client) DefaultSandbox {
-	return DefaultSandbox{"", NotRan, client, request}
+	return DefaultSandbox{
+		containerID: "",
+		status:      NotRan,
+		client:      client,
+		request:     request,
+		events:      []events.Message{},
+	}
 }
 
 // Prepare the sandbox environment for execution, creates the temp file locations, writes down
@@ -303,6 +302,62 @@ func (d DefaultSandbox) getSandboxStandardErrorOutput() ([]string, error) {
 	return lines, nil
 }
 
+func (d DefaultSandbox) AddDockerEventMessage(event events.Message) {
+	d.UpdateStatusFromDockerEvent(event.Status)
+	d.events = append(d.events, event)
+}
+
+func (d DefaultSandbox) UpdateStatusFromDockerEvent(status string) {
+	switch status {
+	case "create":
+		d.handleContainerCreated()
+		break
+	case "start":
+		d.handleContainerStarted()
+		break
+	case "kill":
+		d.handleContainerKilling()
+		break
+	case "die":
+		d.handleContainerKilled()
+		break
+	case "destroy":
+		d.handleContainerRemoved()
+		break
+	default:
+		fmt.Printf("unhandled status %s for container %s\n", status, d.containerID)
+		break
+	}
+}
+
+// Handles the case in which the given container has been created.
+func (d DefaultSandbox) handleContainerCreated() {
+	d.status = Created
+}
+
+// Handles the case in which the given container has been started.
+func (d DefaultSandbox) handleContainerStarted() {
+	d.status = Running
+}
+
+// Handles the case in which the given container is being killed.
+func (d DefaultSandbox) handleContainerKilling() {
+	d.status = Killing
+}
+
+// Handles the case in which the given container has been killed.
+func (d DefaultSandbox) handleContainerKilled() {
+	// Ensure that the status is the last thing updated, since d will trigger the
+	// event, and we don't want the worker service knowing we are "killed" until
+	// ready.
+	d.status = Killed
+}
+
+// Handles the case in which the given container has been removed.
+func (d DefaultSandbox) handleContainerRemoved() {
+	d.status = Finished
+}
+
 // GetResponse - Get the response of the sandbox, can only be called once in removed state.
 func (d DefaultSandbox) GetResponse() Response {
 	defer func(d DefaultSandbox) {
@@ -320,9 +375,25 @@ func (d DefaultSandbox) GetResponse() Response {
 	errorOutput, _ := d.getSandboxStandardErrorOutput()
 	standardOut, _ := d.getSandboxStandardOutput()
 
+	testStatus := NoTest
+
+	// the test is specified and the status is finished so lets go and verify
+	// that the test passed by verifying the out content with the expected content.
+	if d.status == Finished && d.request.Test != nil {
+		testStatus = TestPassed
+
+		for i, expectedData := range d.request.Test.ExpectedStdoutData {
+			if standardOut[i] != expectedData {
+				testStatus = TestFailed
+				break
+			}
+		}
+	}
+
 	return Response{
 		StandardOutput:      errorOutput,
 		StandardErrorOutput: standardOut,
 		Status:              d.status,
+		TestStatus:          testStatus,
 	}
 }
