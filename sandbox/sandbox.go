@@ -42,6 +42,7 @@ const (
 	MemoryConstraintExceeded
 	TimeLimitExceeded
 	ProvidedTestFailed
+	CompilationFailed
 	NonDeterministicError
 )
 
@@ -67,6 +68,11 @@ type Request struct {
 	// for longer than the given timeout then the code is rejected. This is used to ensure that the
 	// source code is not running for longer than required.
 	Timeout int
+
+	// The max amount of timeout for a given container to execute the entire code including compiling.
+	// if this is not set then it will be based on timeout + 50%.
+	ContainerTimeout int
+
 	// The upper limit of the max amount of memory that the given execution can perform. By default, the upper
 	// limit of the amount of mb the given execution can run with.
 	MemoryConstraint int64
@@ -97,7 +103,10 @@ type Response struct {
 	Status SandboxStatus
 
 	// The complete runtime of the container in milliseconds.
-	RuntimeMs time.Duration
+	RuntimeNano time.Duration
+
+	// The complete compile time of the container in milliseconds (if not interpreter)
+	CompileNano time.Duration
 
 	// The result for the test if it was provided.
 	TestStatus SandboxTestResult
@@ -107,7 +116,12 @@ type SandboxContainer struct {
 	containerID string
 	status      SandboxStatus
 	events      []events.Message
-	duration    time.Duration
+
+	runtimeNano time.Duration
+	compileNano time.Duration
+
+	standardOut []string
+	errorOut    []string
 
 	client  *client.Client
 	request Request
@@ -238,13 +252,21 @@ func (d *SandboxContainer) execute(ctx context.Context) error {
 	// that format.
 	// var workingDirectory = ConvertPathToUnix(this._path)
 	workingDirectory := unix.ConvertPathToUnix(d.request.Path)
+	containerTimeout := d.request.ContainerTimeout
+
+	// by default if the container timeout has not been set, we will set it to the code
+	// execution timeout + a 50% buffer, allowing the code to compile if required and
+	// run it without the cost of the startup time.
+	if containerTimeout == 0 {
+		containerTimeout = (d.request.Timeout / 2) + d.request.Timeout
+	}
 
 	containerConfig := container.Config{
 		Image:           d.request.Compiler.VirtualMachineName,
 		WorkingDir:      "/input",
 		Entrypoint:      commandLine,
 		NetworkDisabled: true,
-		StopTimeout:     &d.request.Timeout,
+		StopTimeout:     &containerTimeout,
 	}
 
 	hostConfig := container.HostConfig{
@@ -291,12 +313,16 @@ func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
 		line := scanner.Text()
 
 		if strings.HasSuffix(line, "*-COMPILE::EOF-*") {
-			// let's get the runtime complexity, we can use this to determine if
-			// the execution went passed the time limit.
+			// let's get the runtime/compile complexity, we can use this to
+			// determine if the execution went passed the time limit.
 			runtime := strings.Split(line, " ")[1]
-			duration, _ := strconv.Atoi(runtime)
+			compile := strings.Split(line, " ")[2]
 
-			d.duration = time.Nanosecond * time.Duration(duration)
+			runtimeDuration, _ := strconv.Atoi(runtime)
+			compileDuration, _ := strconv.Atoi(compile)
+
+			d.runtimeNano = time.Nanosecond * time.Duration(runtimeDuration)
+			d.compileNano = time.Nanosecond * time.Duration(compileDuration)
 
 			return lines, nil
 		}
@@ -375,44 +401,39 @@ func (d *SandboxContainer) handleContainerKilling() {
 
 // Handles the case in which the given container has been killed.
 func (d *SandboxContainer) handleContainerKilled() {
-	// Ensure that the status is the last thing updated, since d will trigger the
-	// event, and we don't want the worker service knowing we are "killed" until
-	// ready.
 	d.status = Killed
 }
 
 // Handles the case in which the given container has been removed.
 func (d *SandboxContainer) handleContainerRemoved() {
-	d.status = Finished
-}
-
-// getDurationWithConversion returns the duration execution of the container
-// in the provided conversion. The conversion can be anything in the time.Duration
-// namespace like time.Second, since the duration is in nanoseconds.
-func (d *SandboxContainer) getDurationWithConversion(conversion time.Duration) time.Duration {
-	return d.duration / conversion
-}
-
-// GetResponse - Get the response of the sandbox, can only be called once in removed state.
-func (d *SandboxContainer) GetResponse() Response {
 	defer func(d *SandboxContainer) {
 		_ = d.cleanup()
 	}(d)
 
-	runtime := d.getDurationWithConversion(time.Millisecond)
-
-	if d.status == TimeLimitExceeded || d.status == MemoryConstraintExceeded {
-		return Response{
-			StandardOutput:      nil,
-			StandardErrorOutput: nil,
-			Status:              d.status,
-			RuntimeMs:           runtime,
-		}
-	}
-
 	errorOutput, _ := d.getSandboxStandardErrorOutput()
 	standardOut, _ := d.getSandboxStandardOutput()
 
+	d.errorOut = errorOutput
+	d.standardOut = standardOut
+
+	runTime, _ := d.getDurationWithConversion(time.Millisecond)
+
+	if runTime > time.Duration(d.request.Timeout)*time.Millisecond {
+		d.status = TimeLimitExceeded
+	}
+
+	d.status = Finished
+}
+
+// getDurationWithConversion returns the runtimeNano & compileNano execution of the container
+// in the provided conversion. The conversion can be anything in the time.Duration
+// namespace like time.Second, since the runtimeNano/compileNano is in nanoseconds.
+func (d *SandboxContainer) getDurationWithConversion(conversion time.Duration) (runtime time.Duration, compile time.Duration) {
+	return d.runtimeNano / conversion, d.compileNano / conversion
+}
+
+// GetResponse - Get the response of the sandbox, can only be called once in removed state.
+func (d *SandboxContainer) GetResponse() Response {
 	testStatus := NoTest
 
 	// the test is specified and the status is finished so lets go and verify
@@ -421,7 +442,7 @@ func (d *SandboxContainer) GetResponse() Response {
 		testStatus = TestPassed
 
 		for i, expectedData := range d.request.Test.ExpectedStdoutData {
-			if standardOut[i] != expectedData {
+			if d.standardOut[i] != expectedData {
 				testStatus = TestFailed
 				break
 			}
@@ -429,10 +450,11 @@ func (d *SandboxContainer) GetResponse() Response {
 	}
 
 	return Response{
-		StandardOutput:      errorOutput,
-		StandardErrorOutput: standardOut,
+		StandardOutput:      d.errorOut,
+		StandardErrorOutput: d.standardOut,
 		Status:              d.status,
 		TestStatus:          testStatus,
-		RuntimeMs:           runtime,
+		RuntimeNano:         d.runtimeNano,
+		CompileNano:         d.compileNano,
 	}
 }
