@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/docker/docker/client"
@@ -14,7 +13,7 @@ import (
 
 func main() {
 	dockerClient, _ := client.NewClientWithOpts(client.FromEnv)
-	manager := sandbox.NewSandboxContainerManager(dockerClient)
+	manager := sandbox.NewSandboxContainerManager(dockerClient, 25)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -24,25 +23,41 @@ func main() {
 		manager.Start(context.Background())
 	}()
 
-	ID, complete, err := manager.AddContainer(context.Background(), sandbox.Request{
-		ID:         uuid.New().String(),
-		Timeout:    2,
-		Path:       fmt.Sprintf("./temp/%s/", uuid.New().String()),
-		SourceCode: []string{"import time\n", "time.sleep(5)\n", `print("hello")`},
-		Compiler:   sandbox.Compilers[0],
-		Test:       nil,
-	})
+	containerWg := sync.WaitGroup{}
 
-	if err != nil {
-		log.Fatalln(err)
+	for i := 0; i < 100; i++ {
+		containerWg.Add(1)
+
+		go func() {
+			defer containerWg.Done()
+
+			ID, complete, err := manager.AddContainer(context.Background(), sandbox.Request{
+				ID:         uuid.New().String(),
+				Timeout:    2,
+				Path:       fmt.Sprintf("./temp/%s/", uuid.New().String()),
+				SourceCode: []string{`print("hello")`},
+				Compiler:   sandbox.Compilers[0],
+				Test: &sandbox.Test{
+					ID:                 "",
+					StdinData:          []string{},
+					ExpectedStdoutData: []string{"hello"},
+				},
+			})
+
+			if err == nil {
+				<-complete
+
+				fmt.Println(manager.GetResponse(context.Background(), ID))
+				_ = manager.RemoveContainer(context.Background(), ID, false)
+			}
+		}()
+
 	}
 
-	<-complete
+	containerWg.Wait()
+	manager.Finish()
 
 	fmt.Println("finished")
-
-	fmt.Println(manager.GetResponse(context.Background(), ID))
-	manager.Finish()
 
 	wg.Wait()
 }
