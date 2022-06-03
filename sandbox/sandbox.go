@@ -117,8 +117,8 @@ type SandboxContainer struct {
 	status SandboxStatus
 	events []events.Message
 
-	runtimeNano time.Duration
-	compileNano time.Duration
+	runtimeMs time.Duration
+	compileMs time.Duration
 
 	standardOut []string
 	errorOut    []string
@@ -306,7 +306,7 @@ func (d *SandboxContainer) cleanup() error {
 	close(d.complete)
 
 	if d.request.Path != "" {
-		// return os.RemoveAll(d.request.Path)
+		return os.RemoveAll(d.request.Path)
 	}
 
 	return nil
@@ -334,12 +334,11 @@ func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
 			runtime := strings.Split(line, " ")[1]
 			compile := strings.Split(line, " ")[2]
 
-			// TODO: FIX THIS IS NOT CORRECT OR WORKING ATM.
 			runtimeDuration, _ := strconv.Atoi(runtime)
 			compileDuration, _ := strconv.Atoi(compile)
 
-			d.runtimeNano = time.Nanosecond * time.Duration(runtimeDuration)
-			d.compileNano = time.Nanosecond * time.Duration(compileDuration)
+			d.runtimeMs = time.Duration(runtimeDuration) * time.Millisecond
+			d.compileMs = time.Duration(compileDuration) * time.Millisecond
 
 			return lines, nil
 		}
@@ -433,20 +432,11 @@ func (d *SandboxContainer) handleContainerRemoved() {
 	d.errorOut = errorOutput
 	d.standardOut = standardOut
 
-	runTime, _ := d.getDurationWithConversion(time.Millisecond)
+	d.status = Finished
 
-	if runTime > time.Duration(d.request.Timeout)*time.Millisecond {
+	if d.runtimeMs > time.Duration(d.request.Timeout)*time.Second {
 		d.status = TimeLimitExceeded
 	}
-
-	d.status = Finished
-}
-
-// getDurationWithConversion returns the runtimeNano & compileNano execution of the container
-// in the provided conversion. The conversion can be anything in the time.Duration
-// namespace like time.Second, since the runtimeNano/compileNano is in nanoseconds.
-func (d *SandboxContainer) getDurationWithConversion(conversion time.Duration) (runtime time.Duration, compile time.Duration) {
-	return d.runtimeNano / conversion, d.compileNano / conversion
 }
 
 // GetResponse - Get the response of the sandbox, can only be called once in removed state.
@@ -471,7 +461,7 @@ func (d *SandboxContainer) GetResponse() *Response {
 		StandardErrorOutput: d.standardOut,
 		Status:              d.status,
 		TestStatus:          testStatus,
-		RuntimeNano:         d.runtimeNano,
-		CompileNano:         d.compileNano,
+		RuntimeNano:         d.runtimeMs,
+		CompileNano:         d.compileMs,
 	}
 }
