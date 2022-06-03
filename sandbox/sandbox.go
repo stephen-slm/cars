@@ -113,9 +113,9 @@ type Response struct {
 }
 
 type SandboxContainer struct {
-	containerID string
-	status      SandboxStatus
-	events      []events.Message
+	ID     string
+	status SandboxStatus
+	events []events.Message
 
 	runtimeNano time.Duration
 	compileNano time.Duration
@@ -123,33 +123,37 @@ type SandboxContainer struct {
 	standardOut []string
 	errorOut    []string
 
+	complete chan string
+
 	client  *client.Client
 	request Request
 }
 
 func NewSandboxContainer(request Request, client *client.Client) *SandboxContainer {
 	return &SandboxContainer{
-		containerID: "",
-		status:      NotRan,
-		client:      client,
-		request:     request,
-		events:      []events.Message{},
+		ID:      "",
+		status:  NotRan,
+		client:  client,
+		request: request,
+		events:  []events.Message{},
 	}
 }
 
 // Run the sandbox container with the given configuration options.
-func (d *SandboxContainer) Run(ctx context.Context) (string, error) {
+func (d *SandboxContainer) Run(ctx context.Context) (string, <-chan string, error) {
+	d.complete = make(chan string, 1)
+
 	if err := d.prepare(ctx); err != nil {
 		_ = d.cleanup()
-		return "", err
+		return "", d.complete, err
 	}
 
 	if err := d.execute(ctx); err != nil {
 		_ = d.cleanup()
-		return "", err
+		return "", d.complete, err
 	}
 
-	return d.containerID, nil
+	return d.ID, d.complete, nil
 }
 
 // prepare the sandbox environment for execution, creates the temp file locations, writes down
@@ -170,6 +174,7 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	// Go through the process of writing down the source file to disk, this will be used
 	// and read again when gathering the results.
 	sourceFile, sourceFileErr := os.Create(sourceFilePath)
+	defer sourceFile.Close()
 
 	if sourceFileErr != nil {
 		return sourceFileErr
@@ -187,6 +192,7 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	// Go through the process of writing down the input file to disk, this will be used
 	// and read again when gathering the results.
 	inputFile, inputFileErr := os.Create(inputFilePath)
+	defer inputFile.Close()
 
 	if inputFileErr != nil {
 		return inputFileErr
@@ -205,11 +211,17 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	sourceStandardOut := filepath.Join(d.request.Path, d.request.Compiler.StandardOutputFile)
 	sourceErrorOut := filepath.Join(d.request.Path, d.request.Compiler.StandardErrorFile)
 
-	if _, standardErr := os.Create(sourceStandardOut); standardErr != nil {
+	standardOutFile, standardErr := os.Create(sourceStandardOut)
+	defer standardOutFile.Close()
+
+	if standardErr != nil {
 		return standardErr
 	}
 
-	if _, errOut := os.Create(sourceErrorOut); errOut != nil {
+	errorOutFile, errOut := os.Create(sourceErrorOut)
+	defer errorOutFile.Close()
+
+	if errOut != nil {
 		return errOut
 	}
 
@@ -284,16 +296,19 @@ func (d *SandboxContainer) execute(ctx context.Context) error {
 		return err
 	}
 
-	d.containerID = create.ID
+	d.ID = create.ID
 
-	return d.client.ContainerStart(ctx, d.containerID, types.ContainerStartOptions{})
+	return d.client.ContainerStart(ctx, d.ID, types.ContainerStartOptions{})
 }
 
 // cleanup will remove all the files related to this container on call.
 func (d *SandboxContainer) cleanup() error {
+	close(d.complete)
+
 	if d.request.Path != "" {
-		return os.RemoveAll(d.request.Path)
+		// return os.RemoveAll(d.request.Path)
 	}
+
 	return nil
 }
 
@@ -301,6 +316,7 @@ func (d *SandboxContainer) cleanup() error {
 func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
 	path := filepath.Join(d.request.Path, d.request.Compiler.StandardOutputFile)
 	file, err := os.Open(path)
+	defer file.Close()
 
 	if err != nil {
 		return nil, err
@@ -312,12 +328,13 @@ func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if strings.HasSuffix(line, "*-COMPILE::EOF-*") {
+		if strings.HasPrefix(line, "*-COMPILE::EOF-*") {
 			// let's get the runtime/compile complexity, we can use this to
 			// determine if the execution went passed the time limit.
 			runtime := strings.Split(line, " ")[1]
 			compile := strings.Split(line, " ")[2]
 
+			// TODO: FIX THIS IS NOT CORRECT OR WORKING ATM.
 			runtimeDuration, _ := strconv.Atoi(runtime)
 			compileDuration, _ := strconv.Atoi(compile)
 
@@ -353,6 +370,8 @@ func (d *SandboxContainer) getSandboxStandardErrorOutput() ([]string, error) {
 		}
 	}
 
+	_ = file.Close()
+
 	return lines, nil
 }
 
@@ -379,7 +398,7 @@ func (d *SandboxContainer) updateStatusFromDockerEvent(status string) {
 		d.handleContainerRemoved()
 		break
 	default:
-		fmt.Printf("unhandled status %s for container %s\n", status, d.containerID)
+		fmt.Printf("unhandled status %s for container %s\n", status, d.ID)
 		break
 	}
 }
@@ -406,9 +425,7 @@ func (d *SandboxContainer) handleContainerKilled() {
 
 // Handles the case in which the given container has been removed.
 func (d *SandboxContainer) handleContainerRemoved() {
-	defer func(d *SandboxContainer) {
-		_ = d.cleanup()
-	}(d)
+	defer d.cleanup()
 
 	errorOutput, _ := d.getSandboxStandardErrorOutput()
 	standardOut, _ := d.getSandboxStandardOutput()
@@ -433,7 +450,7 @@ func (d *SandboxContainer) getDurationWithConversion(conversion time.Duration) (
 }
 
 // GetResponse - Get the response of the sandbox, can only be called once in removed state.
-func (d *SandboxContainer) GetResponse() Response {
+func (d *SandboxContainer) GetResponse() *Response {
 	testStatus := NoTest
 
 	// the test is specified and the status is finished so lets go and verify
@@ -449,7 +466,7 @@ func (d *SandboxContainer) GetResponse() Response {
 		}
 	}
 
-	return Response{
+	return &Response{
 		StandardOutput:      d.errorOut,
 		StandardErrorOutput: d.standardOut,
 		Status:              d.status,
