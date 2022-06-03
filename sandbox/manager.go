@@ -80,6 +80,7 @@ func (s *SandboxContainerManager) Start(ctx context.Context) {
 			if container, ok := s.containers[msg.ID]; ok {
 				container.AddDockerEventMessage(msg)
 			}
+		default:
 		}
 	}
 }
