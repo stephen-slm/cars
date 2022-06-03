@@ -1,0 +1,8 @@
+FROM mcr.microsoft.com/dotnet/sdk:6.0
+
+RUN apt-get update -y
+RUN apt-get install coreutils python3 -y
+
+RUN mkdir /project
+RUN dotnet new console --language C# -o /project
+RUN rm /project/Program.cs

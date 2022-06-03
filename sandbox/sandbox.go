@@ -3,6 +3,7 @@ package sandbox
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -83,13 +84,24 @@ type Request struct {
 	// The source code that will be executed, this is the code that will be written to the path and
 	// mounted to the docker container.
 	SourceCode []string
-	// The reference details of the compiler that will be running the code. Including details of the
-	// language, compiler name (or interrupter) and the name of the given output file.
+	// The reference details of the compilerName that will be running the code. Including details of the
+	// language, compilerName name (or interrupter) and the name of the given output file.
 	Compiler LanguageCompiler
 	// The related test that will be executed with the sandbox, comparing a given input with
 	// a given output. This is a optional part since the process could just be completing the
 	// code and not actually testing anything.
 	Test *Test
+}
+
+type ExecutionParameters struct {
+	Compiler         string   `json:"compiler"`
+	SourceFile       string   `json:"sourceFile"`
+	StdInFile        string   `json:"stdInFile"`
+	Out              string   `json:"out"`
+	StandardOut      string   `json:"standardOut"`
+	StandardErrorOut string   `json:"standardErrorOut"`
+	CompileSteps     []string `json:"compileSteps"`
+	RunSteps         []string `json:"runSteps"`
 }
 
 type Response struct {
@@ -103,10 +115,10 @@ type Response struct {
 	Status SandboxStatus
 
 	// The complete runtime of the container in milliseconds.
-	RuntimeNano time.Duration
+	RuntimeMs time.Duration
 
 	// The complete compile time of the container in milliseconds (if not interpreter)
-	CompileNano time.Duration
+	CompileMs time.Duration
 
 	// The result for the test if it was provided.
 	TestStatus SandboxTestResult
@@ -161,7 +173,7 @@ func (d *SandboxContainer) Run(ctx context.Context) (string, <-chan string, erro
 // / If all is prepared properly, no error will be returned.
 func (d *SandboxContainer) prepare(_ context.Context) error {
 	// Create the temporary directory that will be used for storing the source code, standard
-	// input and then the location in which the compiler will write the standard output and the
+	// input and then the location in which the compilerName will write the standard output and the
 	// standard error output. After the data is written and returned, the location will be
 	// deleted.
 	if err := os.MkdirAll(d.request.Path, os.ModeDir); err != nil {
@@ -226,14 +238,23 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	}
 
 	// finally copy in the script file that will be executed to execute the program
-	dir, _ := os.Getwd()
-	bytesRead, err := ioutil.ReadFile(filepath.Join(dir, "/dockerfiles/script.sh"))
+	for _, s := range []string{"/dockerfiles/script.sh", "/dockerfiles/main.py"} {
+		dir, _ := os.Getwd()
+		bytesRead, err := ioutil.ReadFile(filepath.Join(dir, s))
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+
+		name := strings.Split(s, "/")[2]
+
+		if err := ioutil.WriteFile(filepath.Join(d.request.Path, name), bytesRead, 0644); err != nil {
+			return err
+		}
 	}
 
-	return ioutil.WriteFile(filepath.Join(d.request.Path, "script.sh"), bytesRead, 0644)
+	return nil
+
 }
 
 // execute the sandbox environment, building up the arguments, creating the container and starting
@@ -241,20 +262,32 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 // docker stream.
 func (d *SandboxContainer) execute(ctx context.Context) error {
 	language := d.request.Compiler.language
-	compilerEntry := d.request.Compiler.compiler
+
+	compilerEntry := d.request.Compiler.compilerName
 	compileBinary := ""
 
 	if !d.request.Compiler.interpreter {
-		compilerEntry = fmt.Sprintf("%s.out.o", language)
+		compileBinary = fmt.Sprintf("%s.out.o", language)
 	}
 
+	parameters := ExecutionParameters{
+		Compiler:         compilerEntry,
+		SourceFile:       fmt.Sprintf("%s.source", language),
+		StdInFile:        fmt.Sprintf("%s.input", language),
+		Out:              compileBinary,
+		StandardOut:      d.request.Compiler.StandardOutputFile,
+		StandardErrorOut: d.request.Compiler.StandardErrorFile,
+		CompileSteps:     d.request.Compiler.compileSteps,
+		RunSteps:         d.request.Compiler.runSteps,
+	}
+
+	bytes, _ := json.Marshal(parameters)
+	input := string(bytes)
+
 	commandLine := []string{
-		"sh", "./script.sh",
-		compilerEntry,
-		fmt.Sprintf("%s.source", language),
-		fmt.Sprintf("%s.input", language),
-		compileBinary,
-		d.request.Compiler.AdditionalArguments,
+		"sh",
+		"./script.sh",
+		input,
 		d.request.Compiler.StandardOutputFile,
 		d.request.Compiler.StandardErrorFile,
 	}
@@ -266,31 +299,26 @@ func (d *SandboxContainer) execute(ctx context.Context) error {
 	workingDirectory := unix.ConvertPathToUnix(d.request.Path)
 	containerTimeout := d.request.ContainerTimeout
 
-	// by default if the container timeout has not been set, we will set it to the code
-	// execution timeout + a 50% buffer, allowing the code to compile if required and
-	// run it without the cost of the startup time.
-	if containerTimeout == 0 {
-		containerTimeout = (d.request.Timeout / 2) + d.request.Timeout
-	}
-
-	containerConfig := container.Config{
-		Image:           d.request.Compiler.VirtualMachineName,
-		WorkingDir:      "/input",
-		Entrypoint:      commandLine,
-		NetworkDisabled: true,
-		StopTimeout:     &containerTimeout,
-	}
-
-	hostConfig := container.HostConfig{
-		Binds:      []string{fmt.Sprintf("%s:/input", workingDirectory)},
-		AutoRemove: true,
-		Resources: container.Resources{
-			Memory: d.request.MemoryConstraint * 1000000,
+	create, err := d.client.ContainerCreate(
+		ctx,
+		&container.Config{
+			Entrypoint:      commandLine,
+			Image:           d.request.Compiler.VirtualMachineName,
+			NetworkDisabled: true,
+			StopTimeout:     &containerTimeout,
+			WorkingDir:      "/input",
 		},
-	}
-
-	create, err := d.client.ContainerCreate(ctx, &containerConfig,
-		&hostConfig, nil, nil, "")
+		&container.HostConfig{
+			AutoRemove: true,
+			Binds:      []string{fmt.Sprintf("%s:/input", workingDirectory)},
+			Resources: container.Resources{
+				Memory: d.request.MemoryConstraint * 1000000,
+			},
+		},
+		nil,
+		nil,
+		"",
+	)
 
 	if err != nil {
 		return err
@@ -306,7 +334,7 @@ func (d *SandboxContainer) cleanup() error {
 	close(d.complete)
 
 	if d.request.Path != "" {
-		return os.RemoveAll(d.request.Path)
+		// return os.RemoveAll(d.request.Path)
 	}
 
 	return nil
@@ -337,8 +365,8 @@ func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
 			runtimeDuration, _ := strconv.Atoi(runtime)
 			compileDuration, _ := strconv.Atoi(compile)
 
-			d.runtimeMs = time.Duration(runtimeDuration) * time.Millisecond
-			d.compileMs = time.Duration(compileDuration) * time.Millisecond
+			d.runtimeMs = time.Duration(runtimeDuration) * time.Nanosecond
+			d.compileMs = time.Duration(compileDuration) * time.Nanosecond
 
 			return lines, nil
 		}
@@ -448,10 +476,14 @@ func (d *SandboxContainer) GetResponse() *Response {
 	if d.status == Finished && d.request.Test != nil {
 		testStatus = TestPassed
 
-		for i, expectedData := range d.request.Test.ExpectedStdoutData {
-			if d.standardOut[i] != expectedData {
-				testStatus = TestFailed
-				break
+		if len(d.standardOut) != len(d.request.Test.ExpectedStdoutData) {
+			testStatus = TestFailed
+		} else {
+			for i, expectedData := range d.request.Test.ExpectedStdoutData {
+				if d.standardOut[i] != expectedData {
+					testStatus = TestFailed
+					break
+				}
 			}
 		}
 	}
@@ -461,7 +493,7 @@ func (d *SandboxContainer) GetResponse() *Response {
 		StandardErrorOutput: d.standardOut,
 		Status:              d.status,
 		TestStatus:          testStatus,
-		RuntimeNano:         d.runtimeMs,
-		CompileNano:         d.compileMs,
+		RuntimeMs:           d.runtimeMs,
+		CompileMs:           d.compileMs,
 	}
 }
