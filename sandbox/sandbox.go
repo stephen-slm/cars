@@ -7,7 +7,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -94,6 +96,9 @@ type Response struct {
 	// The given status of the sandbox.
 	Status SandboxStatus
 
+	// The complete runtime of the container in milliseconds.
+	RuntimeMs time.Duration
+
 	// The result for the test if it was provided.
 	TestStatus SandboxTestResult
 }
@@ -102,6 +107,7 @@ type SandboxContainer struct {
 	containerID string
 	status      SandboxStatus
 	events      []events.Message
+	duration    time.Duration
 
 	client  *client.Client
 	request Request
@@ -284,7 +290,14 @@ func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if strings.HasPrefix(line, "*-COMPILE::EOF-*") {
+		if strings.HasSuffix(line, "*-COMPILE::EOF-*") {
+			// let's get the runtime complexity, we can use this to determine if
+			// the execution went passed the time limit.
+			runtime := strings.Split(line, " ")[1]
+			duration, _ := strconv.Atoi(runtime)
+
+			d.duration = time.Nanosecond * time.Duration(duration)
+
 			return lines, nil
 		}
 
@@ -373,17 +386,27 @@ func (d *SandboxContainer) handleContainerRemoved() {
 	d.status = Finished
 }
 
+// getDurationWithConversion returns the duration execution of the container
+// in the provided conversion. The conversion can be anything in the time.Duration
+// namespace like time.Second, since the duration is in nanoseconds.
+func (d *SandboxContainer) getDurationWithConversion(conversion time.Duration) time.Duration {
+	return d.duration / conversion
+}
+
 // GetResponse - Get the response of the sandbox, can only be called once in removed state.
 func (d *SandboxContainer) GetResponse() Response {
 	defer func(d *SandboxContainer) {
 		_ = d.cleanup()
 	}(d)
 
+	runtime := d.getDurationWithConversion(time.Millisecond)
+
 	if d.status == TimeLimitExceeded || d.status == MemoryConstraintExceeded {
 		return Response{
 			StandardOutput:      nil,
 			StandardErrorOutput: nil,
 			Status:              d.status,
+			RuntimeMs:           runtime,
 		}
 	}
 
@@ -410,5 +433,6 @@ func (d *SandboxContainer) GetResponse() Response {
 		StandardErrorOutput: standardOut,
 		Status:              d.status,
 		TestStatus:          testStatus,
+		RuntimeMs:           runtime,
 	}
 }
