@@ -18,18 +18,18 @@ COMPILE_START=0
 COMPILE_END=0
 
 if [ "$output" = "" ]; then
-  RUNTIME_START=$(date +%s.%2N)
+  RUNTIME_START=$(date +%s.%N)
   $compiler "$sourceFile" - <"${stdInFile}"
-  RUNTIME_END=$(date +%s.%2N)
+  RUNTIME_END=$(date +%s.%N)
 else
-  COMPILE_START=$(date +%s.%2N)
+  COMPILE_START=$(date +%s.%N)
   $compiler "$sourceFile" "$additionalArguments"
-  COMPILE_END=$(date +%s.%2N)
+  COMPILE_END=$(date +%s.%N)
 
   if [ $? -eq 0 ]; then
-    RUNTIME_START=$(date +%s.%2N)
+    RUNTIME_START=$(date +%s.%N)
     $output - <"${stdInFile}"
-    RUNTIME_END=$(date +%s.%2N)
+    RUNTIME_END=$(date +%s.%N)
   else
     echo "Compilation Failed"
   fi
@@ -39,4 +39,4 @@ fi
 runtime=$(echo "$RUNTIME_END - $RUNTIME_START" | bc)
 compile=$(echo "$COMPILE_END - $COMPILE_START" | bc)
 
-echo "*-COMPILE::EOF-*" "$runtime" $"$compile"
+echo "*-COMPILE::EOF-*" "$runtime" "$compile"
