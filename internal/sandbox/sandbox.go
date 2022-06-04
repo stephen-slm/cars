@@ -19,11 +19,11 @@ import (
 	"compile-and-run-sandbox/internal/sandbox/unix"
 )
 
-type SandboxTestResult int
+type SandboxTestStatus int
 type SandboxStatus int
 
 const (
-	NoTest SandboxTestResult = iota
+	NoTest SandboxTestStatus = iota
 	TestFailed
 	TestPassed
 )
@@ -116,7 +116,7 @@ type Response struct {
 	CompileMs time.Duration
 
 	// The result for the test if it was provided.
-	TestStatus SandboxTestResult
+	TestStatus SandboxTestStatus
 }
 
 type SandboxContainer struct {
