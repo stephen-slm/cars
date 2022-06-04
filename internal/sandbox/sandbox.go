@@ -170,7 +170,7 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	// input and then the location in which the compilerName will write the standard output and the
 	// standard error output. After the data is written and returned, the location will be
 	// deleted.
-	if err := os.MkdirAll(d.request.Path, os.ModeDir); err != nil {
+	if err := os.MkdirAll(d.request.Path, 0750); err != nil {
 		return err
 	}
 
