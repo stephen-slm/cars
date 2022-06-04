@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compile-and-run-sandbox/internal/routing"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -19,5 +20,8 @@ func main() {
 	flag.Parse()
 
 	r := mux.NewRouter()
+
+	r.HandleFunc("/direct", routing.DirectCompileHandler)
+
 	http.Handle("/", r)
 }
