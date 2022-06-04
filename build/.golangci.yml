@@ -1,0 +1,102 @@
+run:
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 2m
+  # include test files or not, default is true
+  tests: true
+  issues-exit-code: 1
+
+issues:
+  fix: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+linters:
+  fast: true
+  enable:
+    - deadcode
+    - dogsled
+    - errcheck
+    - errorlint
+    - exhaustive
+    - forcetypeassert
+    - gocognit
+    - gocritic
+    - goimports
+    - gosimple
+    - govet
+    - ifshort
+    - ineffassign
+    - prealloc
+    - revive
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - wrapcheck
+
+
+linters-settings:
+  dogsled:
+    max-blank-identifiers: 2
+  errcheck:
+    check-blank: false
+  errorlint:
+    errorf: true
+    asserts: true
+    comparison: true
+  exhaustive:
+    check-generated: false
+    default-signifies-exhaustive: false
+  gocognit:
+    min-complexity: 50
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - paramTypeCombine
+  govet:
+    check-shadowing: true
+  revive:
+    # see https://github.com/mgechev/revive#available-rules for details.
+    ignore-generated-header: true
+    severity: warning
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+      - name: defer
+  staticcheck:
+    go: "1.18"
+    # https://staticcheck.io/docs/options#checks
+    checks: [ "all" ]
+  unused:
+    go: "1.18"

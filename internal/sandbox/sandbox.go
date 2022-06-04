@@ -17,7 +17,7 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
 
-	"compile-and-run-sandbox/sandbox/unix"
+	"compile-and-run-sandbox/internal/sandbox/unix"
 )
 
 type SandboxTestResult int
@@ -238,15 +238,16 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	}
 
 	// finally copy in the script file that will be executed to execute the program
-	for _, s := range []string{"/dockerfiles/script.sh", "/dockerfiles/main.py"} {
+	for _, sandboxScript := range []string{"/build/dockerfiles/script.sh", "build/dockerfiles/main.py"} {
 		dir, _ := os.Getwd()
-		bytesRead, err := ioutil.ReadFile(filepath.Join(dir, s))
+		bytesRead, err := ioutil.ReadFile(filepath.Join(dir, sandboxScript))
 
 		if err != nil {
 			return err
 		}
 
-		name := strings.Split(s, "/")[2]
+		scriptSplit := strings.Split(sandboxScript, "/")
+		name := scriptSplit[len(scriptSplit)-1]
 
 		if err := ioutil.WriteFile(filepath.Join(d.request.Path, name), bytesRead, 0644); err != nil {
 			return err
@@ -334,7 +335,7 @@ func (d *SandboxContainer) cleanup() error {
 	close(d.complete)
 
 	if d.request.Path != "" {
-		// return os.RemoveAll(d.request.Path)
+		return os.RemoveAll(d.request.Path)
 	}
 
 	return nil

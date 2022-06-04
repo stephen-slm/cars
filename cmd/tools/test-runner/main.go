@@ -9,7 +9,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/google/uuid"
 
-	"compile-and-run-sandbox/sandbox"
+	"compile-and-run-sandbox/internal/sandbox"
 )
 
 func main() {
