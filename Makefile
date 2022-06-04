@@ -5,6 +5,10 @@ install-tools: ## Install all tools into bin directory.
 build: ## Builds all services in this repository.
 	go install ./cmd/services/...
 
+.PHONY: build-docker-images
+build-docker-images: ## Builds all the required docker images
+	./build/dockerfiles/update-docker.sh
+
 .PHONY: clean
 clean: ## Remove build artifacts.
 	rm -rf $(GOBIN)

@@ -21,12 +21,9 @@ type LanguageCompiler struct {
 	// be the container that will be used for just this language. Most likely virtual_machine_language,
 	// e.g. virtual_machine_python.
 	VirtualMachineName string
-	//  The file in which the given compilerName will be writing too (standard output), since this file
-	// will be read when the response returned to the user.
-	StandardOutputFile string
-	//  The file in which the given compilerName will be writing too (error output), since this file will
-	// be read when the response returned to the user.
-	StandardErrorFile string
+	//  The file in which the given compilerName will be writing too (standard output and error out),
+	//  since this file will be read when the response returned to the user.
+	OutputFile string
 }
 
 var Compilers = map[string]LanguageCompiler{
@@ -34,37 +31,34 @@ var Compilers = map[string]LanguageCompiler{
 		language:     "python",
 		compilerName: "python3",
 		runSteps: []string{
-			"python {{sourceFile}} - <{{stdInFile}}",
+			"python /input/source - </input/input",
 		},
 		interpreter:        true,
 		VirtualMachineName: "virtual_machine_python",
-		StandardOutputFile: "python.out",
-		StandardErrorFile:  "python.error.out",
+		OutputFile:         "python.out",
 	},
 	"node": {
 		language:     "NodeJs",
 		compilerName: "node",
 		runSteps: []string{
-			"node {{sourceFile}} - <{{stdInFile}}",
+			"node /input/source - </input/input",
 		},
 		interpreter:        true,
 		VirtualMachineName: "virtual_machine_node",
-		StandardOutputFile: "node.out",
-		StandardErrorFile:  "node.error.out",
+		OutputFile:         "out",
 	},
 	"cs": {
 		language:     "cs",
 		compilerName: "dotnet",
 		compileSteps: []string{
-			"mv {{sourceFile}} /project/Program.cs",
+			"mv /input/source /project/Program.cs",
 			"dotnet build -c Release --no-restore -o /out /project",
 		},
 		runSteps: []string{
-			"dotnet /out/project.dll - <{{stdInFile}}",
+			"dotnet /out/project.dll - </input/input",
 		},
 		interpreter:        false,
 		VirtualMachineName: "virtual_machine_cs",
-		StandardOutputFile: "cs.out",
-		StandardErrorFile:  "cs.error.out",
+		OutputFile:         "out",
 	},
 }

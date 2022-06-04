@@ -44,6 +44,7 @@ const (
 	TimeLimitExceeded
 	ProvidedTestFailed
 	CompilationFailed
+	RunTimeError
 	NonDeterministicError
 )
 
@@ -94,22 +95,17 @@ type Request struct {
 }
 
 type ExecutionParameters struct {
-	Compiler         string   `json:"compiler"`
-	SourceFile       string   `json:"sourceFile"`
-	StdInFile        string   `json:"stdInFile"`
-	Out              string   `json:"out"`
-	StandardOut      string   `json:"standardOut"`
-	StandardErrorOut string   `json:"standardErrorOut"`
-	CompileSteps     []string `json:"compileSteps"`
-	RunSteps         []string `json:"runSteps"`
+	Compiler      string   `json:"compiler"`
+	Out           string   `json:"out"`
+	StandardOut   string   `json:"standardOut"`
+	CompileSteps  []string `json:"compileSteps"`
+	RunSteps      []string `json:"runSteps"`
+	RunTimeoutSec int      `json:"runTimeoutSec"`
 }
 
 type Response struct {
 	// The raw output that was produced by the sandbox.
-	StandardOutput []string
-
-	// The raw error output that was produced by the sandbox.
-	StandardErrorOutput []string
+	Output []string
 
 	// The given status of the sandbox.
 	Status SandboxStatus
@@ -132,8 +128,7 @@ type SandboxContainer struct {
 	runtimeMs time.Duration
 	compileMs time.Duration
 
-	standardOut []string
-	errorOut    []string
+	output []string
 
 	complete chan string
 
@@ -180,7 +175,7 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 		return err
 	}
 
-	sourceFileName := fmt.Sprintf("%s.source", d.request.Compiler.language)
+	sourceFileName := "source"
 	sourceFilePath := filepath.Join(d.request.Path, sourceFileName)
 
 	// Go through the process of writing down the source file to disk, this will be used
@@ -193,12 +188,12 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	}
 
 	for _, s := range d.request.SourceCode {
-		if _, writeErr := sourceFile.WriteString(s); writeErr != nil {
+		if _, writeErr := sourceFile.WriteString(s + "\r\n"); writeErr != nil {
 			return writeErr
 		}
 	}
 
-	inputFileName := fmt.Sprintf("%s.input", d.request.Compiler.language)
+	inputFileName := "input"
 	inputFilePath := filepath.Join(d.request.Path, inputFileName)
 
 	// Go through the process of writing down the input file to disk, this will be used
@@ -220,25 +215,46 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 
 	// Create the standard output file and standard error output file, these will be directed
 	// towards when the source code file is compiled or the interpreted file is executed.
-	sourceStandardOut := filepath.Join(d.request.Path, d.request.Compiler.StandardOutputFile)
-	sourceErrorOut := filepath.Join(d.request.Path, d.request.Compiler.StandardErrorFile)
+	sourceOut := filepath.Join(d.request.Path, d.request.Compiler.OutputFile)
+	runnerConfig := filepath.Join(d.request.Path, "runner.json")
 
-	standardOutFile, standardErr := os.Create(sourceStandardOut)
-	defer standardOutFile.Close()
+	OutFile, standardErr := os.Create(sourceOut)
+	defer OutFile.Close()
 
 	if standardErr != nil {
 		return standardErr
 	}
 
-	errorOutFile, errOut := os.Create(sourceErrorOut)
-	defer errorOutFile.Close()
+	compilerEntry := d.request.Compiler.compilerName
+	compileBinary := ""
 
-	if errOut != nil {
-		return errOut
+	if !d.request.Compiler.interpreter {
+		compileBinary = "source.out.o"
+	}
+
+	parameters := ExecutionParameters{
+		Compiler:      compilerEntry,
+		Out:           compileBinary,
+		RunTimeoutSec: d.request.Timeout,
+		StandardOut:   d.request.Compiler.OutputFile,
+		CompileSteps:  d.request.Compiler.compileSteps,
+		RunSteps:      d.request.Compiler.runSteps,
+	}
+
+	runnerFile, runnerError := os.Create(runnerConfig)
+	defer runnerFile.Close()
+
+	if runnerError != nil {
+		return runnerError
+	}
+
+	runnerJsonBytes, _ := json.Marshal(parameters)
+	if _, writeErr := runnerFile.Write(runnerJsonBytes); writeErr != nil {
+		return writeErr
 	}
 
 	// finally copy in the script file that will be executed to execute the program
-	for _, sandboxScript := range []string{"/build/dockerfiles/script.sh", "build/dockerfiles/main.py"} {
+	for _, sandboxScript := range []string{"/build/dockerfiles/script.sh"} {
 		dir, _ := os.Getwd()
 		bytesRead, err := ioutil.ReadFile(filepath.Join(dir, sandboxScript))
 
@@ -262,35 +278,10 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 // it. Everything after this point will be based on the stream of data being produced by the
 // docker stream.
 func (d *SandboxContainer) execute(ctx context.Context) error {
-	language := d.request.Compiler.language
-
-	compilerEntry := d.request.Compiler.compilerName
-	compileBinary := ""
-
-	if !d.request.Compiler.interpreter {
-		compileBinary = fmt.Sprintf("%s.out.o", language)
-	}
-
-	parameters := ExecutionParameters{
-		Compiler:         compilerEntry,
-		SourceFile:       fmt.Sprintf("%s.source", language),
-		StdInFile:        fmt.Sprintf("%s.input", language),
-		Out:              compileBinary,
-		StandardOut:      d.request.Compiler.StandardOutputFile,
-		StandardErrorOut: d.request.Compiler.StandardErrorFile,
-		CompileSteps:     d.request.Compiler.compileSteps,
-		RunSteps:         d.request.Compiler.runSteps,
-	}
-
-	bytes, _ := json.Marshal(parameters)
-	input := string(bytes)
-
 	commandLine := []string{
 		"sh",
 		"./script.sh",
-		input,
-		d.request.Compiler.StandardOutputFile,
-		d.request.Compiler.StandardErrorFile,
+		d.request.Compiler.OutputFile,
 	}
 
 	// The working directory just be in a unix based absolute format otherwise its not
@@ -335,7 +326,7 @@ func (d *SandboxContainer) cleanup() error {
 	close(d.complete)
 
 	if d.request.Path != "" {
-		return os.RemoveAll(d.request.Path)
+		// return os.RemoveAll(d.request.Path)
 	}
 
 	return nil
@@ -343,7 +334,7 @@ func (d *SandboxContainer) cleanup() error {
 
 // Loads the response of the sandbox execution, the standard output.
 func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
-	path := filepath.Join(d.request.Path, d.request.Compiler.StandardOutputFile)
+	path := filepath.Join(d.request.Path, d.request.Compiler.OutputFile)
 	file, err := os.Open(path)
 	defer file.Close()
 
@@ -360,45 +351,25 @@ func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
 		if strings.HasPrefix(line, "*-COMPILE::EOF-*") {
 			// let's get the runtime/compile complexity, we can use this to
 			// determine if the execution went passed the time limit.
-			runtime := strings.Split(line, " ")[1]
-			compile := strings.Split(line, " ")[2]
+			splitLine := strings.Split(line, " ")
+
+			runtime := splitLine[1]
+			compile := splitLine[2]
+			code := splitLine[3]
 
 			runtimeDuration, _ := strconv.Atoi(runtime)
 			compileDuration, _ := strconv.Atoi(compile)
+			statusCode, _ := strconv.Atoi(code)
 
 			d.runtimeMs = time.Duration(runtimeDuration) * time.Nanosecond
 			d.compileMs = time.Duration(compileDuration) * time.Nanosecond
+			d.status = SandboxStatus(statusCode)
 
 			return lines, nil
 		}
 
 		lines = append(lines, line)
 	}
-
-	return lines, nil
-}
-
-// Loads the response of the sandbox error execution, the standard error output.
-func (d *SandboxContainer) getSandboxStandardErrorOutput() ([]string, error) {
-	path := filepath.Join(d.request.Path, d.request.Compiler.StandardErrorFile)
-	file, err := os.Open(path)
-
-	if err != nil {
-		return nil, err
-	}
-
-	scanner := bufio.NewScanner(file)
-	var lines []string
-
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-
-		if len(lines) > 50 {
-			break
-		}
-	}
-
-	_ = file.Close()
 
 	return lines, nil
 }
@@ -455,17 +426,8 @@ func (d *SandboxContainer) handleContainerKilled() {
 func (d *SandboxContainer) handleContainerRemoved() {
 	defer d.cleanup()
 
-	errorOutput, _ := d.getSandboxStandardErrorOutput()
-	standardOut, _ := d.getSandboxStandardOutput()
-
-	d.errorOut = errorOutput
-	d.standardOut = standardOut
-
-	d.status = Finished
-
-	if d.runtimeMs > time.Duration(d.request.Timeout)*time.Second {
-		d.status = TimeLimitExceeded
-	}
+	output, _ := d.getSandboxStandardOutput()
+	d.output = output
 }
 
 // GetResponse - Get the response of the sandbox, can only be called once in removed state.
@@ -477,11 +439,11 @@ func (d *SandboxContainer) GetResponse() *Response {
 	if d.status == Finished && d.request.Test != nil {
 		testStatus = TestPassed
 
-		if len(d.standardOut) != len(d.request.Test.ExpectedStdoutData) {
+		if len(d.output) != len(d.request.Test.ExpectedStdoutData) {
 			testStatus = TestFailed
 		} else {
 			for i, expectedData := range d.request.Test.ExpectedStdoutData {
-				if d.standardOut[i] != expectedData {
+				if d.output[i] != expectedData {
 					testStatus = TestFailed
 					break
 				}
@@ -490,11 +452,10 @@ func (d *SandboxContainer) GetResponse() *Response {
 	}
 
 	return &Response{
-		StandardOutput:      d.errorOut,
-		StandardErrorOutput: d.standardOut,
-		Status:              d.status,
-		TestStatus:          testStatus,
-		RuntimeMs:           d.runtimeMs,
-		CompileMs:           d.compileMs,
+		Output:     d.output,
+		Status:     d.status,
+		TestStatus: testStatus,
+		RuntimeMs:  d.runtimeMs,
+		CompileMs:  d.compileMs,
 	}
 }
