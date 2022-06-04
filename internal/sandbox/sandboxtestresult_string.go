@@ -17,8 +17,8 @@ const _SandboxTestResult_name = "NoTestTestFailedTestPassed"
 
 var _SandboxTestResult_index = [...]uint8{0, 6, 16, 26}
 
-func (i SandboxTestStatus) String() string {
-	if i < 0 || i >= SandboxTestStatus(len(_SandboxTestResult_index)-1) {
+func (i ContainerTestStatus) String() string {
+	if i < 0 || i >= ContainerTestStatus(len(_SandboxTestResult_index)-1) {
 		return "SandboxTestResult(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _SandboxTestResult_name[_SandboxTestResult_index[i]:_SandboxTestResult_index[i+1]]

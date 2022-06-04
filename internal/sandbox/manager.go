@@ -6,11 +6,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
-type SandboxContainerManager struct {
+type ContainerManager struct {
 	// the limiter will be a buffered channel used to determine the number of possible
 	// containers that can be executed at any one time. When the container is removed
 	// the buffered channel will be popped, pushing will result in a block until the
@@ -21,19 +23,19 @@ type SandboxContainerManager struct {
 	finished     bool
 }
 
-func NewSandboxContainerManager(dockerClient *client.Client, maxConcurrentContainers int) *SandboxContainerManager {
-	return &SandboxContainerManager{
+func NewSandboxContainerManager(dockerClient *client.Client, maxConcurrentContainers int) *ContainerManager {
+	return &ContainerManager{
 		limiter:      make(chan string, maxConcurrentContainers),
 		dockerClient: dockerClient,
 		containers:   sync.Map{},
 	}
 }
 
-func (s *SandboxContainerManager) AddContainer(ctx context.Context, request Request) (ID string, complete <-chan string, err error) {
+func (s *ContainerManager) AddContainer(ctx context.Context, request *Request) (containerID string, complete <-chan string, err error) {
 	container := NewSandboxContainer(request, s.dockerClient)
 
 	s.limiter <- request.ID
-	containerID, complete, err := container.Run(ctx)
+	containerID, complete, err = container.Run(ctx)
 
 	if err != nil {
 		return containerID, complete, err
@@ -43,10 +45,12 @@ func (s *SandboxContainerManager) AddContainer(ctx context.Context, request Requ
 	return containerID, complete, nil
 }
 
-func (s *SandboxContainerManager) RemoveContainer(ctx context.Context, containerID string, kill bool) error {
+func (s *ContainerManager) RemoveContainer(ctx context.Context, containerID string, kill bool) error {
 	if kill {
-		if container, ok := s.containers.Load(containerID); ok {
-			return s.dockerClient.ContainerKill(ctx, container.(*SandboxContainer).ID, "SIGKILL")
+		if container := s.getContainer(containerID); container != nil {
+			if err := s.dockerClient.ContainerKill(ctx, container.ID, "SIGKILL"); err != nil {
+				return errors.Wrap(err, "failed to kill the container")
+			}
 		}
 	}
 
@@ -55,21 +59,30 @@ func (s *SandboxContainerManager) RemoveContainer(ctx context.Context, container
 	return nil
 }
 
-func (s *SandboxContainerManager) GetResponse(_ context.Context, containerID string) *Response {
-	if container, ok := s.containers.Load(containerID); ok {
-		return container.(*SandboxContainer).GetResponse()
+func (s *ContainerManager) GetResponse(_ context.Context, containerID string) *Response {
+	if container := s.getContainer(containerID); container != nil {
+		return container.GetResponse()
 	}
 
 	return nil
 }
 
-func (s *SandboxContainerManager) Finish() {
+func (s *ContainerManager) getContainer(id string) *Container {
+	if containerRef, ok := s.containers.Load(id); ok {
+		if container, ok := containerRef.(*Container); ok {
+			return container
+		}
+	}
+	return nil
+}
+
+func (s *ContainerManager) Finish() {
 	s.finished = true
 }
 
 // Start will allow the sandbox container to start listening to docker event
 // stream messages allowing the start of containers to be added to the processing
-func (s *SandboxContainerManager) Start(ctx context.Context) {
+func (s *ContainerManager) Start(ctx context.Context) {
 	msgs, errs := s.dockerClient.Events(ctx, types.EventsOptions{
 		Since: time.Now().Format(time.RFC3339),
 	})
@@ -83,8 +96,8 @@ func (s *SandboxContainerManager) Start(ctx context.Context) {
 		case err := <-errs:
 			fmt.Println(err)
 		case msg := <-msgs:
-			if container, ok := s.containers.Load(msg.ID); ok {
-				container.(*SandboxContainer).AddDockerEventMessage(msg)
+			if container := s.getContainer(msg.ID); container != nil {
+				container.AddDockerEventMessage(&msg)
 			}
 		default:
 		}

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
@@ -19,11 +21,11 @@ import (
 	"compile-and-run-sandbox/internal/sandbox/unix"
 )
 
-type SandboxTestStatus int
-type SandboxStatus int
+type ContainerTestStatus int
+type ContainerStatus int
 
 const (
-	NoTest SandboxTestStatus = iota
+	NoTest ContainerTestStatus = iota
 	TestFailed
 	TestPassed
 )
@@ -31,7 +33,7 @@ const (
 const (
 	// NotRan - The test case has not yet executed. This is the default case for the test. And
 	// should only be updated if and when the test has run and exceeded or ran and failed.
-	NotRan SandboxStatus = iota
+	NotRan ContainerStatus = iota
 
 	Created
 	Running
@@ -94,7 +96,7 @@ type Request struct {
 }
 
 type ExecutionParameters struct {
-	language      string   `json:"language"`
+	Language      string   `json:"language"`
 	StandardOut   string   `json:"standardOut"`
 	StandardInput string   `json:"standardInput"`
 	CompileSteps  []string `json:"compileSteps"`
@@ -107,46 +109,46 @@ type Response struct {
 	Output []string
 
 	// The given status of the sandbox.
-	Status SandboxStatus
+	Status ContainerStatus
 
 	// The complete runtime of the container in milliseconds.
-	RuntimeMs time.Duration
+	Runtime time.Duration
 
 	// The complete compile time of the container in milliseconds (if not interpreter)
-	CompileMs time.Duration
+	CompileTime time.Duration
 
 	// The result for the test if it was provided.
-	TestStatus SandboxTestStatus
+	TestStatus ContainerTestStatus
 }
 
-type SandboxContainer struct {
+type Container struct {
 	ID     string
-	status SandboxStatus
-	events []events.Message
+	status ContainerStatus
+	events []*events.Message
 
-	runtimeMs time.Duration
-	compileMs time.Duration
+	runtime     time.Duration
+	compileTime time.Duration
 
 	output []string
 
 	complete chan string
 
 	client  *client.Client
-	request Request
+	request *Request
 }
 
-func NewSandboxContainer(request Request, client *client.Client) *SandboxContainer {
-	return &SandboxContainer{
+func NewSandboxContainer(request *Request, dockerClient *client.Client) *Container {
+	return &Container{
 		ID:      "",
 		status:  NotRan,
-		client:  client,
+		client:  dockerClient,
 		request: request,
-		events:  []events.Message{},
+		events:  []*events.Message{},
 	}
 }
 
 // Run the sandbox container with the given configuration options.
-func (d *SandboxContainer) Run(ctx context.Context) (string, <-chan string, error) {
+func (d *Container) Run(ctx context.Context) (id string, complete <-chan string, err error) {
 	d.complete = make(chan string, 1)
 
 	if err := d.prepare(ctx); err != nil {
@@ -165,13 +167,13 @@ func (d *SandboxContainer) Run(ctx context.Context) (string, <-chan string, erro
 // prepare the sandbox environment for execution, creates the temp file locations, writes down
 // / the source code file and ensures that all properties are correct and valid for execution.
 // / If all is prepared properly, no error will be returned.
-func (d *SandboxContainer) prepare(_ context.Context) error {
+func (d *Container) prepare(_ context.Context) error {
 	// Create the temporary directory that will be used for storing the source code, standard
 	// input and then the location in which the compilerName will write the standard output and the
 	// standard error output. After the data is written and returned, the location will be
 	// deleted.
-	if err := os.MkdirAll(d.request.Path, 0750); err != nil {
-		return err
+	if err := os.MkdirAll(d.request.Path, 0o750); err != nil {
+		return errors.Wrap(err, "failed to make required directories")
 	}
 
 	sourceFileName := "source"
@@ -180,15 +182,18 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	// Go through the process of writing down the source file to disk, this will be used
 	// and read again when gathering the results.
 	sourceFile, sourceFileErr := os.Create(sourceFilePath)
-	defer sourceFile.Close()
 
 	if sourceFileErr != nil {
-		return sourceFileErr
+		return errors.Wrap(sourceFileErr, "failed to create source file")
 	}
+
+	defer func(sourceFile *os.File) {
+		_ = sourceFile.Close()
+	}(sourceFile)
 
 	for _, s := range d.request.SourceCode {
 		if _, writeErr := sourceFile.WriteString(s + "\r\n"); writeErr != nil {
-			return writeErr
+			return errors.Wrap(writeErr, "failed to write source code")
 		}
 	}
 
@@ -197,16 +202,19 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	// Go through the process of writing down the input file to disk, this will be used
 	// and read again when gathering the results.
 	inputFile, inputFileErr := os.Create(inputFilePath)
-	defer inputFile.Close()
 
 	if inputFileErr != nil {
-		return inputFileErr
+		return errors.Wrap(inputFileErr, "failed to create input file")
 	}
+
+	defer func(inputFile *os.File) {
+		_ = inputFile.Close()
+	}(inputFile)
 
 	if d.request.Test != nil {
 		for _, s := range d.request.Test.StdinData {
 			if _, writeErr := inputFile.WriteString(fmt.Sprintf("%s\n", s)); writeErr != nil {
-				return writeErr
+				return errors.Wrap(writeErr, "failed to write standard in data")
 			}
 		}
 	}
@@ -217,14 +225,17 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	runnerConfig := filepath.Join(d.request.Path, "runner.json")
 
 	OutFile, standardErr := os.Create(sourceOut)
-	defer OutFile.Close()
 
 	if standardErr != nil {
-		return standardErr
+		return errors.Wrap(standardErr, "failed to create output file")
 	}
 
+	defer func(OutFile *os.File) {
+		_ = OutFile.Close()
+	}(OutFile)
+
 	parameters := ExecutionParameters{
-		language:      d.request.Compiler.language,
+		Language:      d.request.Compiler.language,
 		RunTimeoutSec: d.request.Timeout,
 		StandardOut:   d.request.Compiler.OutputFile,
 		StandardInput: d.request.Compiler.InputFile,
@@ -233,15 +244,18 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 	}
 
 	runnerFile, runnerError := os.Create(runnerConfig)
-	defer runnerFile.Close()
 
 	if runnerError != nil {
-		return runnerError
+		return errors.Wrap(runnerError, "failed to create runner configuration")
 	}
 
-	runnerJsonBytes, _ := json.Marshal(parameters)
-	if _, writeErr := runnerFile.Write(runnerJsonBytes); writeErr != nil {
-		return writeErr
+	defer func(runnerFile *os.File) {
+		_ = runnerFile.Close()
+	}(runnerFile)
+
+	runnerJSONBytes, _ := json.Marshal(parameters)
+	if _, writeErr := runnerFile.Write(runnerJSONBytes); writeErr != nil {
+		return errors.Wrap(writeErr, "failed to write runner configuration")
 	}
 
 	return nil
@@ -251,7 +265,7 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 // execute the sandbox environment, building up the arguments, creating the container and starting
 // it. Everything after this point will be based on the stream of data being produced by the
 // docker stream.
-func (d *SandboxContainer) execute(ctx context.Context) error {
+func (d *Container) execute(ctx context.Context) error {
 	commandLine := []string{"/runner"}
 
 	// The working directory just be in a unix based absolute format otherwise its not
@@ -283,34 +297,43 @@ func (d *SandboxContainer) execute(ctx context.Context) error {
 	)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create container")
 	}
 
 	d.ID = create.ID
 
-	return d.client.ContainerStart(ctx, d.ID, types.ContainerStartOptions{})
+	if err := d.client.ContainerStart(ctx, d.ID, types.ContainerStartOptions{}); err != nil {
+		return errors.Wrap(err, "failed to start the container")
+	}
+
+	return nil
 }
 
 // cleanup will remove all the files related to this container on call.
-func (d *SandboxContainer) cleanup() error {
+func (d *Container) cleanup() error {
 	close(d.complete)
 
 	if d.request.Path != "" {
-		return os.RemoveAll(d.request.Path)
+		if removeErr := os.RemoveAll(d.request.Path); removeErr != nil {
+			return errors.Wrap(removeErr, "failed to clean up temp directory")
+		}
 	}
 
 	return nil
 }
 
 // Loads the response of the sandbox execution, the standard output.
-func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
+func (d *Container) getSandboxStandardOutput() ([]string, error) {
 	path := filepath.Join(d.request.Path, d.request.Compiler.OutputFile)
 	file, err := os.Open(path)
-	defer file.Close()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to open standard output file")
 	}
+
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
 
 	scanner := bufio.NewScanner(file)
 	var lines []string
@@ -331,9 +354,9 @@ func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
 			compileDuration, _ := strconv.Atoi(compile)
 			statusCode, _ := strconv.Atoi(code)
 
-			d.runtimeMs = time.Duration(runtimeDuration) * time.Nanosecond
-			d.compileMs = time.Duration(compileDuration) * time.Nanosecond
-			d.status = SandboxStatus(statusCode)
+			d.runtime = time.Duration(runtimeDuration) * time.Nanosecond
+			d.compileTime = time.Duration(compileDuration) * time.Nanosecond
+			d.status = ContainerStatus(statusCode)
 
 			return lines, nil
 		}
@@ -344,64 +367,60 @@ func (d *SandboxContainer) getSandboxStandardOutput() ([]string, error) {
 	return lines, nil
 }
 
-func (d *SandboxContainer) AddDockerEventMessage(event events.Message) {
+func (d *Container) AddDockerEventMessage(event *events.Message) {
 	d.updateStatusFromDockerEvent(event.Status)
 	d.events = append(d.events, event)
 }
 
-func (d *SandboxContainer) updateStatusFromDockerEvent(status string) {
+func (d *Container) updateStatusFromDockerEvent(status string) {
 	switch status {
 	case "create":
 		d.handleContainerCreated()
-		break
 	case "start":
 		d.handleContainerStarted()
-		break
 	case "kill":
 		d.handleContainerKilling()
-		break
 	case "die":
 		d.handleContainerKilled()
-		break
 	case "destroy":
 		d.handleContainerRemoved()
-		break
 	default:
 		fmt.Printf("unhandled status %s for container %s\n", status, d.ID)
-		break
 	}
 }
 
 // Handles the case in which the given container has been created.
-func (d *SandboxContainer) handleContainerCreated() {
+func (d *Container) handleContainerCreated() {
 	d.status = Created
 }
 
 // Handles the case in which the given container has been started.
-func (d *SandboxContainer) handleContainerStarted() {
+func (d *Container) handleContainerStarted() {
 	d.status = Running
 }
 
 // Handles the case in which the given container is being killed.
-func (d *SandboxContainer) handleContainerKilling() {
+func (d *Container) handleContainerKilling() {
 	d.status = Killing
 }
 
 // Handles the case in which the given container has been killed.
-func (d *SandboxContainer) handleContainerKilled() {
+func (d *Container) handleContainerKilled() {
 	d.status = Killed
 }
 
 // Handles the case in which the given container has been removed.
-func (d *SandboxContainer) handleContainerRemoved() {
-	defer d.cleanup()
+func (d *Container) handleContainerRemoved() {
+	defer func(d *Container) {
+		_ = d.cleanup()
+	}(d)
 
 	output, _ := d.getSandboxStandardOutput()
 	d.output = output
 }
 
 // GetResponse - Get the response of the sandbox, can only be called once in removed state.
-func (d *SandboxContainer) GetResponse() *Response {
+func (d *Container) GetResponse() *Response {
 	testStatus := NoTest
 
 	// the test is specified and the status is finished so lets go and verify
@@ -422,10 +441,10 @@ func (d *SandboxContainer) GetResponse() *Response {
 	}
 
 	return &Response{
-		Output:     d.output,
-		Status:     d.status,
-		TestStatus: testStatus,
-		RuntimeMs:  d.runtimeMs,
-		CompileMs:  d.compileMs,
+		Output:      d.output,
+		Status:      d.status,
+		TestStatus:  testStatus,
+		Runtime:     d.runtime,
+		CompileTime: d.compileTime,
 	}
 }

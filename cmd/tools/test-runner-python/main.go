@@ -23,7 +23,7 @@ func main() {
 		manager.Start(context.Background())
 	}()
 
-	ID, complete, err := manager.AddContainer(context.Background(), sandbox.Request{
+	ID, complete, err := manager.AddContainer(context.Background(), &sandbox.Request{
 		ID:               uuid.New().String(),
 		Timeout:          1,
 		MemoryConstraint: 1024,
@@ -42,8 +42,8 @@ func main() {
 
 		resp := manager.GetResponse(context.Background(), ID)
 
-		fmt.Println("resp.CompileMs=", resp.CompileMs)
-		fmt.Println("resp.RuntimeMs=", resp.RuntimeMs)
+		fmt.Println("resp.CompileMs=", resp.CompileTime)
+		fmt.Println("resp.RuntimeMs=", resp.Runtime)
 		fmt.Println("resp.TestStatus=", resp.TestStatus)
 		fmt.Println("resp.Status=", resp.Status)
 		fmt.Println("resp.Output=", resp.Output)

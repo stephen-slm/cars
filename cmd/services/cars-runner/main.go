@@ -51,7 +51,7 @@ func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (c
 		// We want to check the context error to see if the timeout was executed.
 		// The error returned by cmd.Output() will be OS specific based on what
 		// happens when a process is killed.
-		if ctx.Err() == context.DeadlineExceeded {
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			err = ctx.Err()
 			return
 		}
@@ -93,7 +93,7 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (runti
 	// We want to check the context error to see if the timeout was executed.
 	// The error returned by cmd.Output() will be OS specific based on what
 	// happens when a process is killed.
-	if ctx.Err() == context.DeadlineExceeded {
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		err = ctx.Err()
 		return
 	}
@@ -109,10 +109,10 @@ func main() {
 		log.Fatalln("runner.json configuration file does not exist and container cannot be executed.")
 	}
 
-	fileBytes, compileError := os.ReadFile("/input/runner.json")
+	fileBytes, runnerFileErr := os.ReadFile("/input/runner.json")
 
-	if compileError != nil {
-		log.Fatalln("runner.json failed to be read", compileError)
+	if runnerFileErr != nil {
+		log.Fatalln("runner.json failed to be read", runnerFileErr)
 	}
 
 	var params sandbox.ExecutionParameters
@@ -129,27 +129,30 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	compileTime, compileError := compileProject(ctx, &params)
+	var runtime, compileTime int64
+	var compileErr, runtimeErr error
 
-	if compileError != nil {
-		if compileError == context.DeadlineExceeded {
+	compileTime, compileErr = compileProject(ctx, &params)
+
+	if compileErr != nil {
+		if errors.Is(compileErr, context.DeadlineExceeded) {
 			responseCode = sandbox.TimeLimitExceeded
-			return
+		} else {
+			responseCode = sandbox.CompilationFailed
 		}
-
-		responseCode = sandbox.CompilationFailed
 	}
 
-	runTime, runTimeError := runProject(ctx, &params)
+	if responseCode == sandbox.Finished {
+		runtime, runtimeErr = runProject(ctx, &params)
 
-	if runTimeError != nil {
-		if runTimeError == context.DeadlineExceeded {
-			responseCode = sandbox.TimeLimitExceeded
-			return
+		if runtimeErr != nil {
+			if errors.Is(runtimeErr, context.DeadlineExceeded) {
+				responseCode = sandbox.TimeLimitExceeded
+			} else {
+				responseCode = sandbox.RunTimeError
+			}
 		}
-
-		responseCode = sandbox.RunTimeError
 	}
 
-	fmt.Println("*-COMPILE::EOF-*", runTime, compileTime, int(responseCode))
+	fmt.Println("*-COMPILE::EOF-*", runtime, compileTime, int(responseCode))
 }

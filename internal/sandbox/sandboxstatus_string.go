@@ -26,8 +26,8 @@ const _SandboxStatus_name = "NotRanCreatedRunningKillingKilledFinishedMemoryCons
 
 var _SandboxStatus_index = [...]uint8{0, 6, 13, 20, 27, 33, 41, 65, 82, 100, 117, 129, 150}
 
-func (i SandboxStatus) String() string {
-	if i < 0 || i >= SandboxStatus(len(_SandboxStatus_index)-1) {
+func (i ContainerStatus) String() string {
+	if i < 0 || i >= ContainerStatus(len(_SandboxStatus_index)-1) {
 		return "SandboxStatus(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _SandboxStatus_name[_SandboxStatus_index[i]:_SandboxStatus_index[i+1]]
