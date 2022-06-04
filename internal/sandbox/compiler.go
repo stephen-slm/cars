@@ -7,13 +7,9 @@ type LanguageCompiler struct {
 	language string
 	// The name of the compiler used in the steps, this is not including the actions which
 	// are used to perform the compilation and running.
-	compilerName string
-	// The steps used to run the application after compiling or if it is interpreter then these
-	// are skipped.
-	runSteps []string
+	runSteps string
 	// The steps used to compile the application, these are skipped if interpreter is true.
 	compileSteps []string
-
 	// If the given compilerName is an interpreter or not, since based on this action we would need to
 	// create additional steps for compiling to a file if not.
 	interpreter bool
@@ -24,41 +20,36 @@ type LanguageCompiler struct {
 	//  The file in which the given compilerName will be writing too (standard output and error out),
 	//  since this file will be read when the response returned to the user.
 	OutputFile string
+	InputFile  string
 }
 
 var Compilers = map[string]LanguageCompiler{
 	"python": {
-		language:     "python",
-		compilerName: "python3",
-		runSteps: []string{
-			"python /input/source - </input/input",
-		},
+		language:           "python",
+		runSteps:           "python /input/source",
 		interpreter:        true,
 		VirtualMachineName: "virtual_machine_python",
-		OutputFile:         "python.out",
+		OutputFile:         "output",
+		InputFile:          "input",
 	},
 	"node": {
-		language:     "NodeJs",
-		compilerName: "node",
-		runSteps: []string{
-			"node /input/source - </input/input",
-		},
+		language:           "NodeJs",
+		runSteps:           "node /input/source",
 		interpreter:        true,
 		VirtualMachineName: "virtual_machine_node",
-		OutputFile:         "out",
+		OutputFile:         "output",
+		InputFile:          "input",
 	},
 	"cs": {
-		language:     "cs",
-		compilerName: "dotnet",
+		language: "cs",
 		compileSteps: []string{
 			"mv /input/source /project/Program.cs",
 			"dotnet build -c Release --no-restore -o /out /project",
 		},
-		runSteps: []string{
-			"dotnet /out/project.dll - </input/input",
-		},
+		runSteps:           "dotnet /out/project.dll",
 		interpreter:        false,
 		VirtualMachineName: "virtual_machine_cs",
-		OutputFile:         "out",
+		OutputFile:         "output",
+		InputFile:          "input",
 	},
 }

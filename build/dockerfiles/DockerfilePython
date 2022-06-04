@@ -2,8 +2,6 @@ FROM golang:1.18-alpine as BUILDER
 
 WORKDIR /app
 
-RUN ls -la
-
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
@@ -16,3 +14,5 @@ FROM python:3.9-alpine
 
 COPY --from=BUILDER /runner /runner
 RUN apk --update add sudo bc coreutils python3
+
+CMD ["/runner"]

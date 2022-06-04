@@ -1,8 +1,26 @@
+FROM golang:1.18-alpine as BUILDER
+
+WORKDIR /app
+
+RUN ls -la
+
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN go build -o /runner ./cmd/services/cars-runner/main.go
+
 FROM mcr.microsoft.com/dotnet/sdk:6.0
+
+RUN mkdir /project
+COPY --from=BUILDER /runner /project/runner
 
 RUN apt-get update -y
 RUN apt-get install coreutils python3 -y
 
-RUN mkdir /project
 RUN dotnet new console --language C# -o /project
 RUN rm /project/Program.cs
+
+CMD ["/project/runner"]

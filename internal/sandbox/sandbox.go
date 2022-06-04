@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -95,11 +94,11 @@ type Request struct {
 }
 
 type ExecutionParameters struct {
-	Compiler      string   `json:"compiler"`
-	Out           string   `json:"out"`
+	language      string   `json:"language"`
 	StandardOut   string   `json:"standardOut"`
+	StandardInput string   `json:"standardInput"`
 	CompileSteps  []string `json:"compileSteps"`
-	RunSteps      []string `json:"runSteps"`
+	Run           string   `json:"runSteps"`
 	RunTimeoutSec int      `json:"runTimeoutSec"`
 }
 
@@ -193,8 +192,7 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 		}
 	}
 
-	inputFileName := "input"
-	inputFilePath := filepath.Join(d.request.Path, inputFileName)
+	inputFilePath := filepath.Join(d.request.Path, d.request.Compiler.InputFile)
 
 	// Go through the process of writing down the input file to disk, this will be used
 	// and read again when gathering the results.
@@ -225,20 +223,13 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 		return standardErr
 	}
 
-	compilerEntry := d.request.Compiler.compilerName
-	compileBinary := ""
-
-	if !d.request.Compiler.interpreter {
-		compileBinary = "source.out.o"
-	}
-
 	parameters := ExecutionParameters{
-		Compiler:      compilerEntry,
-		Out:           compileBinary,
+		language:      d.request.Compiler.language,
 		RunTimeoutSec: d.request.Timeout,
 		StandardOut:   d.request.Compiler.OutputFile,
+		StandardInput: d.request.Compiler.InputFile,
 		CompileSteps:  d.request.Compiler.compileSteps,
-		RunSteps:      d.request.Compiler.runSteps,
+		Run:           d.request.Compiler.runSteps,
 	}
 
 	runnerFile, runnerError := os.Create(runnerConfig)
@@ -253,23 +244,6 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 		return writeErr
 	}
 
-	// finally copy in the script file that will be executed to execute the program
-	for _, sandboxScript := range []string{"/build/dockerfiles/script.sh"} {
-		dir, _ := os.Getwd()
-		bytesRead, err := ioutil.ReadFile(filepath.Join(dir, sandboxScript))
-
-		if err != nil {
-			return err
-		}
-
-		scriptSplit := strings.Split(sandboxScript, "/")
-		name := scriptSplit[len(scriptSplit)-1]
-
-		if err := ioutil.WriteFile(filepath.Join(d.request.Path, name), bytesRead, 0644); err != nil {
-			return err
-		}
-	}
-
 	return nil
 
 }
@@ -278,11 +252,7 @@ func (d *SandboxContainer) prepare(_ context.Context) error {
 // it. Everything after this point will be based on the stream of data being produced by the
 // docker stream.
 func (d *SandboxContainer) execute(ctx context.Context) error {
-	commandLine := []string{
-		"sh",
-		"./script.sh",
-		d.request.Compiler.OutputFile,
-	}
+	commandLine := []string{"/runner"}
 
 	// The working directory just be in a unix based absolute format otherwise its not
 	// going to work as expected and thus needs to be converted to ensure that it is in
@@ -326,7 +296,7 @@ func (d *SandboxContainer) cleanup() error {
 	close(d.complete)
 
 	if d.request.Path != "" {
-		// return os.RemoveAll(d.request.Path)
+		return os.RemoveAll(d.request.Path)
 	}
 
 	return nil

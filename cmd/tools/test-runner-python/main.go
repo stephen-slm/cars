@@ -28,8 +28,13 @@ func main() {
 		Timeout:          1,
 		MemoryConstraint: 1024,
 		Path:             fmt.Sprintf("./temp/%s/", uuid.New().String()),
-		SourceCode:       []string{`print("hello")sdfasdf`},
+		SourceCode:       []string{`import sys`, `print(input())`},
 		Compiler:         sandbox.Compilers["python"],
+		Test: &sandbox.Test{
+			ID:                 uuid.New().String(),
+			StdinData:          []string{"hello world"},
+			ExpectedStdoutData: []string{"hello world"},
+		},
 	})
 
 	if err == nil {
