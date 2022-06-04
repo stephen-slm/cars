@@ -71,11 +71,9 @@ type Request struct {
 	// for longer than the given timeout then the code is rejected. This is used to ensure that the
 	// source code is not running for longer than required.
 	Timeout int
-
 	// The max amount of timeout for a given container to execute the entire code including compiling.
 	// if this is not set then it will be based on timeout + 50%.
 	ContainerTimeout int
-
 	// The upper limit of the max amount of memory that the given execution can perform. By default, the upper
 	// limit of the amount of mb the given execution can run with.
 	MemoryConstraint int64

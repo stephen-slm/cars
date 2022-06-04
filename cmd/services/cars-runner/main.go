@@ -104,7 +104,6 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (runti
 }
 
 func main() {
-
 	if _, err := os.Stat("/input/runner.json"); errors.Is(err, os.ErrNotExist) {
 		log.Fatalln("runner.json configuration file does not exist and container cannot be executed.")
 	}
