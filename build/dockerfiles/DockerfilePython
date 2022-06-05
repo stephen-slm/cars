@@ -14,5 +14,3 @@ FROM python:3.9-alpine
 
 COPY --from=BUILDER /runner /runner
 RUN apk --update add sudo bc coreutils
-
-CMD ["/runner"]

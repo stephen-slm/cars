@@ -1,0 +1,51 @@
+version: "3.4"
+
+services:
+  api:
+    image: ${DOCKER_REGISTRY-}carsapi
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    networks:
+      - default
+    ports:
+      - "8080:8080"
+    depends_on:
+      - database
+
+  database:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: root
+      POSTGRES_USER: root
+      POSTGRES_DB: compile-me
+    ports:
+      - "54320:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-d", "postgres" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - default
+
+  nsqd:
+    image: nsqio/nsq
+    command: /nsqd
+    ports:
+      - "4150:4150"
+      - "4151:4151"
+    networks:
+      - default
+
+  nsqadmin:
+    image: nsqio/nsq
+    command: /nsqadmin --nsqd-http-address=nsqd:4151
+    ports:
+      - "4171:4171"
+    networks:
+      - default
+
+networks:
+  default:

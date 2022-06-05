@@ -23,5 +23,3 @@ RUN apk add sudo snap coreutils bash icu-libs krb5-libs libgcc libintl libssl1.1
 
 RUN dotnet new console --language C# -o /project
 RUN rm /project/Program.cs
-
-CMD ["/runner"]
