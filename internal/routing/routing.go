@@ -4,22 +4,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/nsqio/go-nsq"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
+
+	"compile-and-run-sandbox/internal/validation"
 )
 
 type CompileRequest struct {
 	ID         string   `json:"id"`
-	Language   string   `json:"language"`
-	SourceCode []string `json:"source_code"`
+	Language   string   `json:"language" validate:"required,oneof=python node"`
+	SourceCode []string `json:"source_code" validate:"required"`
 
-	StdinData          []string `json:"stdin_data"`
-	ExpectedStdoutData []string `json:"expected_stdout_data"`
+	StdinData          []string `json:"stdin_data" validate:"required"`
+	ExpectedStdoutData []string `json:"expected_stdout_data" validate:"required"`
 }
 
 type QueueCompileResponse struct {
@@ -27,8 +31,8 @@ type QueueCompileResponse struct {
 }
 
 type CompileErrorResponse struct {
-	Message string `json:"id"`
-	Code    int    `json:"code"`
+	Errors []string `json:"errors"`
+	Code   int      `json:"code"`
 }
 
 func handleJsonResponse(w http.ResponseWriter, body any, code int) {
@@ -83,7 +87,9 @@ func handleDecodeError(w http.ResponseWriter, err error) {
 }
 
 type CompilerHandler struct {
-	Publisher *nsq.Producer
+	Translator ut.Translator
+	Validator  *validator.Validate
+	Publisher  *nsq.Producer
 }
 
 func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +107,13 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.Validator.Struct(&direct); err != nil {
+		handleJsonResponse(w, CompileErrorResponse{
+			Errors: validation.TranslateError(err, h.Translator),
+			Code:   0,
+		}, http.StatusBadRequest)
+	}
+
 	bytes, _ := json.Marshal(direct)
 	err := h.Publisher.Publish("containers", bytes)
 
@@ -108,8 +121,8 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Print(err.Error())
 
 		handleJsonResponse(w, CompileErrorResponse{
-			Message: "failed to execute compile request",
-			Code:    0,
+			Errors: []string{"failed to execute compile request"},
+			Code:   0,
 		}, http.StatusInternalServerError)
 
 		return

@@ -5,8 +5,13 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/go-playground/locales/en"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
 	"github.com/nsqio/go-nsq"
 	"github.com/rs/zerolog/log"
+
+	enTranslations "github.com/go-playground/validator/v10/translations/en"
 
 	"compile-and-run-sandbox/internal/routing"
 
@@ -38,6 +43,15 @@ func configureArgs() flags {
 	return args
 }
 
+func getTranslator() ut.Translator {
+
+	english := en.New()
+	uni := ut.New(english, english)
+	translator, _ := uni.GetTranslator("en")
+
+	return translator
+}
+
 func main() {
 	log.Info().Msg("starting cars-api")
 
@@ -54,8 +68,20 @@ func main() {
 
 	r := mux.NewRouter()
 
+	validate := validator.New()
+	translator := getTranslator()
+
+	// register the validator with the translator to get clean readable generated
+	// error messages from validation actions. This massively simplifies returning
+	// error messages in the future.
+	_ = enTranslations.RegisterDefaultTranslations(validate, translator)
+
 	r.Handle("/", handlers.
-		LoggingHandler(os.Stdout, routing.CompilerHandler{Publisher: producer})).
+		LoggingHandler(os.Stdout, routing.CompilerHandler{
+			Translator: translator,
+			Publisher:  producer,
+			Validator:  validate,
+		})).
 		Methods("POST")
 
 	log.Info().Msg("listening on :8080")
