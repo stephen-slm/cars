@@ -1,18 +1,6 @@
 version: "3.4"
 
 services:
-  api:
-    image: ${DOCKER_REGISTRY-}carsapi
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    networks:
-      - default
-    ports:
-      - "8080:8080"
-    depends_on:
-      - database
-
   database:
     image: postgres
     restart: always
