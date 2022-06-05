@@ -1,17 +1,20 @@
 package routing
 
 import (
-	"compile-and-run-sandbox/internal/sandbox"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"io"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/google/uuid"
+	"github.com/nsqio/go-nsq"
+	"github.com/pkg/errors"
 )
 
 type CompileRequest struct {
+	ID         string   `json:"id"`
 	Language   string   `json:"language"`
 	SourceCode []string `json:"source_code"`
 
@@ -19,18 +22,23 @@ type CompileRequest struct {
 	ExpectedStdoutData []string `json:"expected_stdout_data"`
 }
 
-type DirectCompileResponse struct {
-	Output []string `json:"output"`
-
-	Status     sandbox.ContainerStatus     `json:"status"`
-	TestStatus sandbox.ContainerTestStatus `json:"test_status"`
-
-	RuntimeMs     int64 `json:"runtime_ms"`
-	CompileTimeMs int64 `json:"compile_time_ms"`
-}
-
 type QueueCompileResponse struct {
 	ID string `json:"id"`
+}
+
+type CompileErrorResponse struct {
+	Message string `json:"id"`
+	Code    int    `json:"code"`
+}
+
+func handleJsonResponse(w http.ResponseWriter, body any, code int) {
+	response, _ := json.Marshal(body)
+
+	fmt.Println(string(response))
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	_, _ = w.Write(response)
 }
 
 func handleDecodeError(w http.ResponseWriter, err error) {
@@ -74,20 +82,38 @@ func handleDecodeError(w http.ResponseWriter, err error) {
 	}
 }
 
-func DirectCompileHandler(w http.ResponseWriter, r *http.Request) {
-	// Use http.MaxBytesReader to enforce a maximum read of 2MB from the response
-	// body. A request body larger than that will now result in Decode() returning
-	// a "http: request body too large" error.
+type CompilerHandler struct {
+	Publisher *nsq.Producer
+}
+
+func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Use http.MaxBytesReader to enforce a maximum read of 2MB.
 	r.Body = http.MaxBytesReader(w, r.Body, 1_048576*2)
 
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
-	var direct DirectCompileResponse
+	var direct CompileRequest
+	direct.ID = uuid.New().String()
+
 	if err := dec.Decode(&direct); err != nil {
 		handleDecodeError(w, err)
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_, _ = fmt.Fprintf(w, "%+v", direct)
+	bytes, _ := json.Marshal(direct)
+	err := h.Publisher.Publish("containers", bytes)
+
+	if err != nil {
+		log.Print(err.Error())
+
+		handleJsonResponse(w, CompileErrorResponse{
+			Message: "failed to execute compile request",
+			Code:    0,
+		}, http.StatusInternalServerError)
+
+		return
+	}
+
+	handleJsonResponse(w, QueueCompileResponse{ID: direct.ID}, http.StatusOK)
 }

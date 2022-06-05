@@ -53,7 +53,7 @@ func main() {
 		fmt.Println(err)
 	}
 
-	manager.Finish()
+	manager.Stop()
 
 	fmt.Println("finished")
 

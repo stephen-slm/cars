@@ -18,6 +18,7 @@ func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (c
 	// this has to be defined here since we always want this total time
 	// and the total time is determined in to defer func.
 	var timeAtExecution time.Time
+	compileTimeNano = 0
 
 	hasSteps := len(params.CompileSteps) > 0
 

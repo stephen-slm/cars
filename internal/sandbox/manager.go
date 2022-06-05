@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -20,7 +22,7 @@ type ContainerManager struct {
 	limiter      chan string
 	dockerClient *client.Client
 	containers   sync.Map
-	finished     bool
+	stopFlag     int32
 }
 
 func NewSandboxContainerManager(dockerClient *client.Client, maxConcurrentContainers int) *ContainerManager {
@@ -69,15 +71,17 @@ func (s *ContainerManager) GetResponse(_ context.Context, containerID string) *R
 
 func (s *ContainerManager) getContainer(id string) *Container {
 	if containerRef, ok := s.containers.Load(id); ok {
-		if container, ok := containerRef.(*Container); ok {
+		if container, castOk := containerRef.(*Container); castOk {
 			return container
 		}
 	}
 	return nil
 }
 
-func (s *ContainerManager) Finish() {
-	s.finished = true
+func (s *ContainerManager) Stop() {
+	log.Info().Msg("stopping sandbox manager")
+
+	atomic.StoreInt32(&s.stopFlag, 1)
 }
 
 // Start will allow the sandbox container to start listening to docker event
@@ -88,8 +92,8 @@ func (s *ContainerManager) Start(ctx context.Context) {
 	})
 
 	for {
-		if s.finished {
-			break
+		if atomic.LoadInt32(&s.stopFlag) == 1 {
+			return
 		}
 
 		select {
