@@ -63,7 +63,7 @@ func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
 	var direct routing.CompileRequest
 
 	if err := json.Unmarshal(m.Body, &direct); err != nil {
-		return errors.Wrap(err, "failed to parse compile request.")
+		return errors.Wrap(err, "failed to parse compile request")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -90,7 +90,7 @@ func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
 	ID, complete, err := h.manager.AddContainer(ctx, &sandboxRequest)
 
 	if err != nil {
-		return errors.Wrap(err, "failed to add container to manager.")
+		return errors.Wrap(err, "failed to add container to manager")
 	}
 
 	<-complete

@@ -35,7 +35,7 @@ type CompileErrorResponse struct {
 	Code   int      `json:"code"`
 }
 
-func handleJsonResponse(w http.ResponseWriter, body any, code int) {
+func handleJSONResponse(w http.ResponseWriter, body any, code int) {
 	response, _ := json.Marshal(body)
 
 	fmt.Println(string(response))
@@ -55,7 +55,7 @@ func handleDecodeError(w http.ResponseWriter, err error) {
 		http.Error(w, msg, http.StatusBadRequest)
 
 	case errors.Is(err, io.ErrUnexpectedEOF):
-		msg := fmt.Sprintf("Request body contains badly-formed JSON")
+		msg := "Request body contains badly-formed JSON"
 		http.Error(w, msg, http.StatusBadRequest)
 
 	case errors.As(err, &unmarshalTypeError):
@@ -108,7 +108,7 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Validator.Struct(&direct); err != nil {
-		handleJsonResponse(w, CompileErrorResponse{
+		handleJSONResponse(w, CompileErrorResponse{
 			Errors: validation.TranslateError(err, h.Translator),
 			Code:   0,
 		}, http.StatusBadRequest)
@@ -120,7 +120,7 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err.Error())
 
-		handleJsonResponse(w, CompileErrorResponse{
+		handleJSONResponse(w, CompileErrorResponse{
 			Errors: []string{"failed to execute compile request"},
 			Code:   0,
 		}, http.StatusInternalServerError)
@@ -128,5 +128,5 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handleJsonResponse(w, QueueCompileResponse{ID: direct.ID}, http.StatusOK)
+	handleJSONResponse(w, QueueCompileResponse{ID: direct.ID}, http.StatusOK)
 }
