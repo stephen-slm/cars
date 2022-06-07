@@ -9,8 +9,8 @@ type Client struct {
 	DB *gorm.DB
 }
 
-func NewRepository(connectionUrl string) (Repository, error) {
-	db, err := gorm.Open(postgres.Open(connectionUrl), &gorm.Config{})
+func NewRepository(connectionURL string) (Repository, error) {
+	db, err := gorm.Open(postgres.Open(connectionURL), &gorm.Config{})
 
 	if err != nil {
 		return nil, err
@@ -23,7 +23,7 @@ func NewRepository(connectionUrl string) (Repository, error) {
 
 type Repository interface {
 	InsertExecution(execution *Execution) error
-	UpdateExecution(id string, columns Execution) (bool, error)
+	UpdateExecution(id string, columns *Execution) (bool, error)
 	UpdateExecutionStatus(id string, status string) error
 	GetExecution(id string) (Execution, error)
 }

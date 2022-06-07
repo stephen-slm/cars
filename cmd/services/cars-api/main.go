@@ -90,7 +90,7 @@ func main() {
 	r.Handle("/", handlers.
 		LoggingHandler(os.Stdout, routing.CompilerHandler{
 			FileHandler: localFileHandler,
-			Db:          repo,
+			Repo:        repo,
 			Publisher:   producer,
 			Translator:  translator,
 			Validator:   validate,

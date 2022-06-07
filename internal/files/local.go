@@ -49,5 +49,11 @@ func (l LocalFiles) GetFile(id string, name string) ([]byte, error) {
 		return nil, errors.Wrapf(err, "cannot locate file %s", name)
 	}
 
-	return os.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get the local file %s by id %s", name, id)
+	}
+
+	return data, nil
 }

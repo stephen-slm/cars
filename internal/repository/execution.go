@@ -22,7 +22,7 @@ func (c Client) InsertExecution(execution *Execution) error {
 	return result.Error
 }
 
-func (c Client) UpdateExecution(id string, columns Execution) (bool, error) {
+func (c Client) UpdateExecution(id string, columns *Execution) (bool, error) {
 	result := c.DB.Model(&Execution{ID: id}).Where("").Updates(columns)
 	return result.RowsAffected > 0, result.Error
 }

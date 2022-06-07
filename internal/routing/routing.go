@@ -5,12 +5,13 @@ import (
 	"compile-and-run-sandbox/internal/queue"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
@@ -103,7 +104,7 @@ func handleDecodeError(w http.ResponseWriter, err error) {
 
 type CompilerHandler struct {
 	FileHandler files.Files
-	Db          repository.Repository
+	Repo        repository.Repository
 	Translator  ut.Translator
 	Validator   *validator.Validate
 	Publisher   *nsq.Producer
@@ -132,11 +133,11 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusBadRequest)
 	}
 
-	requestId := uuid.NewString()
-	_ = h.FileHandler.WriteFile(requestId, "source", []byte(direct.SourceCode))
+	requestID := uuid.NewString()
+	_ = h.FileHandler.WriteFile(requestID, "source", []byte(direct.SourceCode))
 
 	bytes, _ := json.Marshal(queue.CompileMessage{
-		ID:                 requestId,
+		ID:                 requestID,
 		Language:           direct.Language,
 		StdinData:          direct.StdinData,
 		ExpectedStdoutData: direct.ExpectedStdoutData,
@@ -155,8 +156,8 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbErr := h.Db.InsertExecution(&repository.Execution{
-		ID:         requestId,
+	dbErr := h.Repo.InsertExecution(&repository.Execution{
+		ID:         requestID,
 		Status:     sandbox.NotRan.String(),
 		TestStatus: sandbox.TestNotRan.String(),
 	})
@@ -172,7 +173,7 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handleJSONResponse(w, QueueCompileResponse{ID: requestId}, http.StatusOK)
+	handleJSONResponse(w, QueueCompileResponse{ID: requestID}, http.StatusOK)
 }
 
 type CompilerInfoHandler struct {
@@ -192,7 +193,7 @@ func (h CompilerInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parsedIdValue, err := uuid.Parse(uuidValue)
+	parsedIDValue, err := uuid.Parse(uuidValue)
 
 	if err != nil {
 		handleJSONResponse(w, CompileErrorResponse{
@@ -203,7 +204,7 @@ func (h CompilerInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	execution, err := h.Repo.GetExecution(parsedIdValue.String())
+	execution, err := h.Repo.GetExecution(parsedIDValue.String())
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		handleJSONResponse(w, CompileErrorResponse{
@@ -222,7 +223,7 @@ func (h CompilerInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Output:     "",
 	}
 
-	if data, outputErr := h.FileHandler.GetFile(parsedIdValue.String(), "output"); outputErr == nil {
+	if data, outputErr := h.FileHandler.GetFile(parsedIDValue.String(), "output"); outputErr == nil {
 		log.Info().Str("data", string(data)).Msg("data")
 		resp.Output = string(data)
 	}

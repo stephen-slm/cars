@@ -87,7 +87,7 @@ func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
 		ID:               compileMsg.ID,
 		Timeout:          1,
 		MemoryConstraint: 1024,
-		Path:             fmt.Sprintf(filepath.Join(os.TempDir(), "executions", uuid.NewString())),
+		Path:             filepath.Join(os.TempDir(), "executions", uuid.NewString()),
 		SourceCode:       string(sourceCode),
 		Compiler:         sandbox.Compilers[compileMsg.Language],
 		Test:             nil,
@@ -120,7 +120,7 @@ func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
 
 	_ = h.manager.RemoveContainer(context.Background(), containerID, false)
 
-	_, _ = h.repo.UpdateExecution(compileMsg.ID, repository.Execution{
+	_, _ = h.repo.UpdateExecution(compileMsg.ID, &repository.Execution{
 		Status:     resp.Status.String(),
 		TestStatus: resp.TestStatus.String(),
 		CompileMs:  resp.CompileTime.Milliseconds(),
