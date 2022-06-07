@@ -31,12 +31,6 @@ type NsqConsumer struct {
 	consumer *nsq.Consumer
 }
 
-type nsqConsumerMessageHandler struct {
-	repo         repository.Repository
-	manager      *sandbox.ContainerManager
-	filesHandler files.Files
-}
-
 func NewNsqProducer(params *NsqParams) (*nsq.Producer, error) {
 	address := fmt.Sprintf("%s:%d", params.NsqLookupAddress, params.NsqLookupPort)
 	return nsq.NewProducer(address, nsq.NewConfig())
@@ -66,6 +60,12 @@ func NewNsqConsumer(params *NsqParams, manager *sandbox.ContainerManager, repo r
 	}
 
 	return &NsqConsumer{}, nil
+}
+
+type nsqConsumerMessageHandler struct {
+	repo         repository.Repository
+	manager      *sandbox.ContainerManager
+	filesHandler files.Files
 }
 
 func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
@@ -101,11 +101,15 @@ func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
 		}
 	}
 
+	_ = h.repo.UpdateExecutionStatus(compileMsg.ID, sandbox.Created.String())
 	containerID, complete, err := h.manager.AddContainer(ctx, &sandboxRequest)
 
 	if err != nil {
+		_ = h.repo.UpdateExecutionStatus(compileMsg.ID, sandbox.NonDeterministicError.String())
 		return errors.Wrap(err, "failed to add container to manager")
 	}
+
+	_ = h.repo.UpdateExecutionStatus(compileMsg.ID, sandbox.Running.String())
 
 	<-complete
 
@@ -114,22 +118,14 @@ func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
 	_ = h.filesHandler.WriteFile(sandboxRequest.ID, "output",
 		[]byte(strings.Join(resp.Output, "\r\n")))
 
+	_ = h.manager.RemoveContainer(context.Background(), containerID, false)
+
 	_, _ = h.repo.UpdateExecution(compileMsg.ID, repository.Execution{
 		Status:     resp.Status.String(),
 		TestStatus: resp.TestStatus.String(),
 		CompileMs:  resp.CompileTime.Milliseconds(),
 		RuntimeMs:  resp.Runtime.Milliseconds(),
 	})
-
-	log.Info().
-		Dur("compileMs", resp.CompileTime).
-		Dur("runtimeMs", resp.Runtime).
-		Str("testStatus", resp.TestStatus.String()).
-		Str("status", resp.Status.String()).
-		Strs("output", resp.Output).
-		Msg("response")
-
-	_ = h.manager.RemoveContainer(context.Background(), containerID, false)
 
 	return nil
 }
