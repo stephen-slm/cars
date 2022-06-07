@@ -26,3 +26,15 @@ func (c Client) UpdateExecution(id string, columns Execution) (bool, error) {
 	result := c.DB.Model(&Execution{ID: id}).Where("").Updates(columns)
 	return result.RowsAffected > 0, result.Error
 }
+
+func (c Client) GetExecution(id string) (Execution, error) {
+	execution := Execution{}
+
+	result := c.DB.Where("id = ?", id).First(&execution)
+	return execution, result.Error
+}
+
+func (c Client) UpdateExecutionStatus(id string, status string) error {
+	result := c.DB.Where("id = ?", id).UpdateColumns(Execution{Status: status})
+	return result.Error
+}

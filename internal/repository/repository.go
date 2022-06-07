@@ -24,4 +24,6 @@ func NewRepository(connectionUrl string) (Repository, error) {
 type Repository interface {
 	InsertExecution(execution *Execution) error
 	UpdateExecution(id string, columns Execution) (bool, error)
+	UpdateExecutionStatus(id string, status string) error
+	GetExecution(id string) (Execution, error)
 }
