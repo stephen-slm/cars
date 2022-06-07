@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"strings"
@@ -27,6 +29,16 @@ type CompileRequest struct {
 
 	StdinData          []string `json:"stdin_data" validate:"required"`
 	ExpectedStdoutData []string `json:"expected_stdout_data" validate:"required"`
+}
+
+type CompileInfoResponse struct {
+	Status     string `json:"status"`
+	TestStatus string `json:"test_status"`
+
+	CompileMs int64 `json:"compile_ms"`
+	RuntimeMs int64 `json:"runtime_ms"`
+
+	Output string `json:"output"`
 }
 
 type QueueCompileResponse struct {
@@ -78,7 +90,7 @@ func handleDecodeError(w http.ResponseWriter, err error) {
 	// there is an open issue regarding turning this into a sentinel
 	// error at https://github.com/golang/go/issues/30715.
 	case err.Error() == "http: request body too large":
-		msg := "Request body must not be larger than 2MB"
+		msg := "Request body must not be larger than 1MB"
 		http.Error(w, msg, http.StatusRequestEntityTooLarge)
 
 	// Otherwise default to logging the error and sending a 500 Internal
@@ -98,8 +110,8 @@ type CompilerHandler struct {
 }
 
 func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Use http.MaxBytesReader to enforce a maximum read of 2MB.
-	r.Body = http.MaxBytesReader(w, r.Body, 1_048576*2)
+	// Use http.MaxBytesReader to enforce a maximum read of 1MB.
+	r.Body = http.MaxBytesReader(w, r.Body, 1_048576*1)
 
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
@@ -161,4 +173,59 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handleJSONResponse(w, QueueCompileResponse{ID: requestId}, http.StatusOK)
+}
+
+type CompilerInfoHandler struct {
+	FileHandler files.Files
+	Repo        repository.Repository
+}
+
+func (h CompilerInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	uuidValue, ok := mux.Vars(r)["id"]
+
+	if !ok {
+		handleJSONResponse(w, CompileErrorResponse{
+			Errors: []string{"no or invalid compile request id provided."},
+			Code:   0,
+		}, http.StatusBadRequest)
+
+		return
+	}
+
+	parsedIdValue, err := uuid.Parse(uuidValue)
+
+	if err != nil {
+		handleJSONResponse(w, CompileErrorResponse{
+			Errors: []string{"failed to parse id value"},
+			Code:   0,
+		}, http.StatusBadRequest)
+
+		return
+	}
+
+	execution, err := h.Repo.GetExecution(parsedIdValue.String())
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		handleJSONResponse(w, CompileErrorResponse{
+			Errors: []string{"the execution does not exist by the provided id."},
+			Code:   0,
+		}, http.StatusNotFound)
+
+		return
+	}
+
+	resp := CompileInfoResponse{
+		Status:     execution.Status,
+		TestStatus: execution.TestStatus,
+		CompileMs:  execution.CompileMs,
+		RuntimeMs:  execution.RuntimeMs,
+		Output:     "",
+	}
+
+	if data, outputErr := h.FileHandler.GetFile(parsedIdValue.String(), "output"); outputErr == nil {
+		log.Info().Str("data", string(data)).Msg("data")
+		resp.Output = string(data)
+	}
+
+	handleJSONResponse(w, resp, http.StatusOK)
 }

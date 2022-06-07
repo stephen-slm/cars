@@ -97,6 +97,12 @@ func main() {
 		})).
 		Methods("POST")
 
+	r.Handle("/{id}", handlers.
+		LoggingHandler(os.Stdout, routing.CompilerInfoHandler{
+			FileHandler: localFileHandler,
+			Repo:        repo,
+		})).Methods("GET")
+
 	log.Info().Msg("listening on :8080")
 	log.Fatal().Err(http.ListenAndServe(":8080", handlers.CompressHandler(r)))
 }
