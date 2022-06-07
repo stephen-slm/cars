@@ -31,7 +31,7 @@ type flags struct {
 func configureArgs() flags {
 	args := flags{}
 
-	flag.StringVar(&args.databaseConn, "database-connection-string", "host=localhost user=postgres password=root dbname=compile TimeZone=UTC", "")
+	flag.StringVar(&args.databaseConn, "database-connection-string", "host=localhost user=root password=root port=54320 dbname=compile TimeZone=UTC", "")
 
 	flag.StringVar(&args.sqsQueue, "sqs-queue", "", "")
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -79,10 +81,10 @@ func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
 	defer cancel()
 
 	sandboxRequest := sandbox.Request{
-		ID:               uuid.New().String(),
+		ID:               uuid.NewString(),
 		Timeout:          1,
 		MemoryConstraint: 1024,
-		Path:             fmt.Sprintf("./temp/%s/", uuid.New().String()),
+		Path:             fmt.Sprintf(filepath.Join(os.TempDir(), "executions", uuid.NewString())),
 		SourceCode:       direct.SourceCode,
 		Compiler:         sandbox.Compilers[direct.Language],
 		Test:             nil,

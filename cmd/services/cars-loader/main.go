@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/docker/docker/client"
@@ -29,7 +30,7 @@ type flags struct {
 func configureArgs() flags {
 	args := flags{}
 
-	flag.IntVar(&args.maxConcurrentContainers, "max-concurrent-containers", 10, "")
+	flag.IntVar(&args.maxConcurrentContainers, "max-concurrent-containers", 5, "")
 
 	flag.StringVar(&args.sqsQueue, "sqs-queue", "", "")
 
@@ -58,7 +59,7 @@ func main() {
 	}
 
 	manager := sandbox.NewSandboxContainerManager(dockerClient, args.maxConcurrentContainers)
-	localFileHandler := files.NewLocalFileHandler("./temp/executions/")
+	localFileHandler := files.NewLocalFileHandler(filepath.Join(os.TempDir(), "executions"))
 
 	log.Info().Msg("starting NSQ consumer")
 	nsqService, err := queue.NewNsqConsumer(&queue.NsqParams{
