@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
+	"compile-and-run-sandbox/internal/files"
 	"compile-and-run-sandbox/internal/routing"
 	"compile-and-run-sandbox/internal/sandbox"
 )
@@ -28,7 +30,8 @@ type NsqConsumer struct {
 }
 
 type nsqConsumerMessageHandler struct {
-	manager *sandbox.ContainerManager
+	manager      *sandbox.ContainerManager
+	filesHandler files.Files
 }
 
 func NewNsqProducer(params *NsqParams) (*nsq.Producer, error) {
@@ -36,7 +39,7 @@ func NewNsqProducer(params *NsqParams) (*nsq.Producer, error) {
 	return nsq.NewProducer(address, nsq.NewConfig())
 }
 
-func NewNsqConsumer(params *NsqParams, manager *sandbox.ContainerManager) (*NsqConsumer, error) {
+func NewNsqConsumer(params *NsqParams, manager *sandbox.ContainerManager, fileHandler files.Files) (*NsqConsumer, error) {
 	config := nsq.NewConfig()
 	config.MaxInFlight = params.MaxInFlight
 
@@ -47,7 +50,8 @@ func NewNsqConsumer(params *NsqParams, manager *sandbox.ContainerManager) (*NsqC
 	}
 
 	consumer.AddConcurrentHandlers(&nsqConsumerMessageHandler{
-		manager: manager,
+		filesHandler: fileHandler,
+		manager:      manager,
 	}, params.MaxInFlight)
 
 	address := fmt.Sprintf("%s:%d", params.NsqLookupAddress, params.NsqLookupPort)
@@ -101,6 +105,9 @@ func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
 	<-complete
 
 	resp := h.manager.GetResponse(ctx, ID)
+
+	_ = h.filesHandler.WriteFile(sandboxRequest.ID, "output",
+		[]byte(strings.Join(resp.Output, "\r\n")))
 
 	log.Info().
 		Dur("compileMs", resp.CompileTime).

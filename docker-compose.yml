@@ -1,7 +1,7 @@
 version: "3.4"
 
 services:
-  databasemain:
+  database:
     image: postgres
     restart: always
     environment:

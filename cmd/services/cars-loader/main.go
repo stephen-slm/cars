@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/rs/zerolog/log"
 
+	"compile-and-run-sandbox/internal/files"
 	"compile-and-run-sandbox/internal/queue"
 	"compile-and-run-sandbox/internal/sandbox"
 
@@ -57,6 +58,7 @@ func main() {
 	}
 
 	manager := sandbox.NewSandboxContainerManager(dockerClient, args.maxConcurrentContainers)
+	localFileHandler := files.NewLocalFileHandler("./temp/executions/")
 
 	log.Info().Msg("starting NSQ consumer")
 	nsqService, err := queue.NewNsqConsumer(&queue.NsqParams{
@@ -65,7 +67,7 @@ func main() {
 		NsqLookupAddress: args.nsqAddress,
 		NsqLookupPort:    args.nsqPort,
 		Topic:            args.nsqTopic,
-	}, manager)
+	}, manager, localFileHandler)
 
 	if err != nil {
 		log.Fatal().Err(err)
