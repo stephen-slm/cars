@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compile-and-run-sandbox/internal/repository"
 	"context"
 	"os"
 	"os/signal"
@@ -20,6 +21,7 @@ import (
 type flags struct {
 	sqsQueue                string
 	maxConcurrentContainers int
+	databaseConn            string
 
 	nsqTopic   string
 	nsqChannel string
@@ -31,13 +33,13 @@ func configureArgs() flags {
 	args := flags{}
 
 	flag.IntVar(&args.maxConcurrentContainers, "max-concurrent-containers", 5, "")
-
-	flag.StringVar(&args.sqsQueue, "sqs-queue", "", "")
-
-	flag.StringVar(&args.nsqTopic, "nsq-topic", "containers", "")
-	flag.StringVar(&args.nsqChannel, "nsq-channel", "main", "")
-	flag.StringVar(&args.nsqAddress, "nsq-address", "nsqd", "")
 	flag.IntVar(&args.nsqPort, "nsq-port", 4150, "")
+
+	flag.StringVar(&args.databaseConn, "database-connection-string", "host=localhost user=root password=root port=54320 dbname=compile TimeZone=UTC", "")
+	flag.StringVar(&args.nsqAddress, "nsq-address", "nsqd", "")
+	flag.StringVar(&args.nsqChannel, "nsq-channel", "main", "")
+	flag.StringVar(&args.nsqTopic, "nsq-topic", "containers", "")
+	flag.StringVar(&args.sqsQueue, "sqs-queue", "", "")
 
 	flag.Parse()
 
@@ -58,6 +60,12 @@ func main() {
 		log.Fatal().Err(dockerErr)
 	}
 
+	repo, err := repository.NewRepository(args.databaseConn)
+
+	if err != nil {
+		log.Fatal().Err(err)
+	}
+
 	manager := sandbox.NewSandboxContainerManager(dockerClient, args.maxConcurrentContainers)
 	localFileHandler := files.NewLocalFileHandler(filepath.Join(os.TempDir(), "executions"))
 
@@ -68,7 +76,7 @@ func main() {
 		NsqLookupAddress: args.nsqAddress,
 		NsqLookupPort:    args.nsqPort,
 		Topic:            args.nsqTopic,
-	}, manager, localFileHandler)
+	}, manager, repo, localFileHandler)
 
 	if err != nil {
 		log.Fatal().Err(err)

@@ -1,15 +1,17 @@
 package routing
 
 import (
+	"compile-and-run-sandbox/internal/files"
+	"compile-and-run-sandbox/internal/queue"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strings"
 
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"github.com/nsqio/go-nsq"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -20,7 +22,6 @@ import (
 )
 
 type CompileRequest struct {
-	ID         string `json:"id"`
 	Language   string `json:"language" validate:"required,oneof=python node"`
 	SourceCode string `json:"source_code" validate:"required"`
 
@@ -89,10 +90,11 @@ func handleDecodeError(w http.ResponseWriter, err error) {
 }
 
 type CompilerHandler struct {
-	Db         repository.Repository
-	Translator ut.Translator
-	Validator  *validator.Validate
-	Publisher  *nsq.Producer
+	FileHandler files.Files
+	Db          repository.Repository
+	Translator  ut.Translator
+	Validator   *validator.Validate
+	Publisher   *nsq.Producer
 }
 
 func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +105,6 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	dec.DisallowUnknownFields()
 
 	var direct CompileRequest
-	direct.ID = uuid.New().String()
 
 	if err := dec.Decode(&direct); err != nil {
 		handleDecodeError(w, err)
@@ -119,7 +120,16 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusBadRequest)
 	}
 
-	bytes, _ := json.Marshal(direct)
+	requestId := uuid.NewString()
+	_ = h.FileHandler.WriteFile(requestId, "source", []byte(direct.SourceCode))
+
+	bytes, _ := json.Marshal(queue.CompileMessage{
+		ID:                 requestId,
+		Language:           direct.Language,
+		StdinData:          direct.StdinData,
+		ExpectedStdoutData: direct.ExpectedStdoutData,
+	})
+
 	err := h.Publisher.Publish("containers", bytes)
 
 	if err != nil {
@@ -133,20 +143,22 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if dbErr := h.Db.InsertExecution(&repository.Execution{
-		ID:         direct.ID,
-		Source:     direct.SourceCode,
-		Output:     "",
-		Status:     sandbox.NotRan,
-		TestStatus: sandbox.TestNotRan,
-	}); dbErr != nil {
+	dbErr := h.Db.InsertExecution(&repository.Execution{
+		ID:         requestId,
+		Status:     sandbox.NotRan.String(),
+		TestStatus: sandbox.TestNotRan.String(),
+	})
+
+	if dbErr != nil {
 		log.Error().Err(dbErr)
 
 		handleJSONResponse(w, CompileErrorResponse{
 			Errors: []string{"failed to create execution record"},
 			Code:   0,
 		}, http.StatusInternalServerError)
+
+		return
 	}
 
-	handleJSONResponse(w, QueueCompileResponse{ID: direct.ID}, http.StatusOK)
+	handleJSONResponse(w, QueueCompileResponse{ID: requestId}, http.StatusOK)
 }

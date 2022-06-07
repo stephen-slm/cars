@@ -1,8 +1,10 @@
 package main
 
 import (
+	"compile-and-run-sandbox/internal/files"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
@@ -69,6 +71,7 @@ func main() {
 	}
 
 	repo, err := repository.NewRepository(args.databaseConn)
+	localFileHandler := files.NewLocalFileHandler(filepath.Join(os.TempDir(), "executions"))
 
 	if err != nil {
 		log.Fatal().Err(err)
@@ -86,10 +89,11 @@ func main() {
 
 	r.Handle("/", handlers.
 		LoggingHandler(os.Stdout, routing.CompilerHandler{
-			Db:         repo,
-			Publisher:  producer,
-			Translator: translator,
-			Validator:  validate,
+			FileHandler: localFileHandler,
+			Db:          repo,
+			Publisher:   producer,
+			Translator:  translator,
+			Validator:   validate,
 		})).
 		Methods("POST")
 
