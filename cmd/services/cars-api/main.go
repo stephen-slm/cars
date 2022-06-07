@@ -1,18 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
-	"github.com/nsqio/go-nsq"
 	"github.com/rs/zerolog/log"
 
 	enTranslations "github.com/go-playground/validator/v10/translations/en"
 
+	"compile-and-run-sandbox/internal/queue"
+	"compile-and-run-sandbox/internal/repository"
 	"compile-and-run-sandbox/internal/routing"
 
 	"github.com/gorilla/handlers"
@@ -22,14 +22,16 @@ import (
 )
 
 type flags struct {
-	sqsQueue string
-
-	nsqAddress string
-	nsqPort    int
+	databaseConn string
+	sqsQueue     string
+	nsqAddress   string
+	nsqPort      int
 }
 
 func configureArgs() flags {
 	args := flags{}
+
+	flag.StringVar(&args.databaseConn, "database-connection-string", "host=localhost user=postgres password=root dbname=compile TimeZone=UTC", "")
 
 	flag.StringVar(&args.sqsQueue, "sqs-queue", "", "")
 
@@ -57,10 +59,16 @@ func main() {
 
 	args := configureArgs()
 
-	config := nsq.NewConfig()
+	producer, err := queue.NewNsqProducer(&queue.NsqParams{
+		NsqLookupAddress: args.nsqAddress,
+		NsqLookupPort:    args.nsqPort,
+	})
 
-	address := fmt.Sprintf("%s:%d", args.nsqAddress, args.nsqPort)
-	producer, err := nsq.NewProducer(address, config)
+	if err != nil {
+		log.Fatal().Err(err)
+	}
+
+	repo, err := repository.NewRepository(args.databaseConn)
 
 	if err != nil {
 		log.Fatal().Err(err)
@@ -78,8 +86,9 @@ func main() {
 
 	r.Handle("/", handlers.
 		LoggingHandler(os.Stdout, routing.CompilerHandler{
-			Translator: translator,
+			Db:         repo,
 			Publisher:  producer,
+			Translator: translator,
 			Validator:  validate,
 		})).
 		Methods("POST")

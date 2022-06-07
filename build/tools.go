@@ -9,4 +9,6 @@ package build
 import (
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/jstemmer/go-junit-report"
+	_ "golang.org/x/tools/cmd/goimports"
+	_ "golang.org/x/tools/cmd/stringer"
 )

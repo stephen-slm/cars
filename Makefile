@@ -1,3 +1,6 @@
+# Install all development tools and build artifacts to the project's `bin` directory.
+export GOBIN=$(CURDIR)/bin
+
 install-tools: ## Install all tools into bin directory.
 	@cat build/tools.go | grep "_" | awk '{print $$2}' | xargs go install
 
@@ -12,6 +15,15 @@ build-docker-images: ## Builds all the required docker images
 .PHONY: clean
 clean: ## Remove build artifacts.
 	rm -rf $(GOBIN)
+
+.PHONY: generate
+generate: install-tools ## Generate mocks, florence features and other code.
+	@go generate ./...
+	@$(MAKE) fmt
+
+.PHONY: fmt
+fmt: install-tools ## Format code.
+	@$(GOBIN)/goimports -w -local "github.com/deliveroo/" $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 .PHONY: lint
 lint: install-tools ## Lint code.

@@ -1,22 +1,27 @@
 package repository
 
 import (
-	"time"
-
-	"compile-and-run-sandbox/internal/sandbox"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-type Execution struct {
-	ID string `gorm:"primarykey"`
-
-	Source     string
-	Output     string
-	Status     sandbox.ContainerStatus
-	TestStatus sandbox.ContainerTestStatus
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
+type Client struct {
+	DB *gorm.DB
 }
 
-type Repository struct {
+func NewRepository(connectionUrl string) (Repository, error) {
+	db, err := gorm.Open(postgres.Open(connectionUrl), &gorm.Config{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	_ = db.AutoMigrate(&Execution{})
+
+	return Client{DB: db}, nil
+}
+
+type Repository interface {
+	InsertExecution(execution *Execution) error
+	UpdateExecution(id string, columns Execution) (bool, error)
 }

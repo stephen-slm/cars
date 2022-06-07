@@ -1,3 +1,6 @@
+//go:generate stringer -type=ContainerStatus
+//go:generate stringer -type=ContainerTestStatus
+
 package sandbox
 
 import (
@@ -26,6 +29,7 @@ type ContainerStatus int
 
 const (
 	NoTest ContainerTestStatus = iota
+	TestNotRan
 	TestFailed
 	TestPassed
 )
@@ -83,7 +87,7 @@ type Request struct {
 	Path string
 	// The source code that will be executed, this is the code that will be written to the path and
 	// mounted to the docker container.
-	SourceCode []string
+	SourceCode string
 	// The reference details of the compilerName that will be running the code. Including details of the
 	// language, compilerName name (or interrupter) and the name of the given output file.
 	Compiler LanguageCompiler
@@ -189,10 +193,8 @@ func (d *Container) prepare(_ context.Context) error {
 		_ = sourceFile.Close()
 	}(sourceFile)
 
-	for _, s := range d.request.SourceCode {
-		if _, writeErr := sourceFile.WriteString(s + "\r\n"); writeErr != nil {
-			return errors.Wrap(writeErr, "failed to write source code")
-		}
+	if _, writeErr := sourceFile.WriteString(d.request.SourceCode + "\r\n"); writeErr != nil {
+		return errors.Wrap(writeErr, "failed to write source code")
 	}
 
 	inputFilePath := filepath.Join(d.request.Path, d.request.Compiler.InputFile)

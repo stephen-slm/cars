@@ -31,6 +31,11 @@ type nsqConsumerMessageHandler struct {
 	manager *sandbox.ContainerManager
 }
 
+func NewNsqProducer(params *NsqParams) (*nsq.Producer, error) {
+	address := fmt.Sprintf("%s:%d", params.NsqLookupAddress, params.NsqLookupPort)
+	return nsq.NewProducer(address, nsq.NewConfig())
+}
+
 func NewNsqConsumer(params *NsqParams, manager *sandbox.ContainerManager) (*NsqConsumer, error) {
 	config := nsq.NewConfig()
 	config.MaxInFlight = params.MaxInFlight

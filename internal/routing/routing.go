@@ -14,13 +14,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
+	"compile-and-run-sandbox/internal/repository"
+	"compile-and-run-sandbox/internal/sandbox"
 	"compile-and-run-sandbox/internal/validation"
 )
 
 type CompileRequest struct {
-	ID         string   `json:"id"`
-	Language   string   `json:"language" validate:"required,oneof=python node"`
-	SourceCode []string `json:"source_code" validate:"required"`
+	ID         string `json:"id"`
+	Language   string `json:"language" validate:"required,oneof=python node"`
+	SourceCode string `json:"source_code" validate:"required"`
 
 	StdinData          []string `json:"stdin_data" validate:"required"`
 	ExpectedStdoutData []string `json:"expected_stdout_data" validate:"required"`
@@ -87,6 +89,7 @@ func handleDecodeError(w http.ResponseWriter, err error) {
 }
 
 type CompilerHandler struct {
+	Db         repository.Repository
 	Translator ut.Translator
 	Validator  *validator.Validate
 	Publisher  *nsq.Producer
@@ -108,6 +111,8 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Validator.Struct(&direct); err != nil {
+		log.Error().Err(err)
+
 		handleJSONResponse(w, CompileErrorResponse{
 			Errors: validation.TranslateError(err, h.Translator),
 			Code:   0,
@@ -118,7 +123,7 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := h.Publisher.Publish("containers", bytes)
 
 	if err != nil {
-		log.Print(err.Error())
+		log.Error().Err(err)
 
 		handleJSONResponse(w, CompileErrorResponse{
 			Errors: []string{"failed to execute compile request"},
@@ -126,6 +131,21 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusInternalServerError)
 
 		return
+	}
+
+	if dbErr := h.Db.InsertExecution(&repository.Execution{
+		ID:         direct.ID,
+		Source:     direct.SourceCode,
+		Output:     "",
+		Status:     sandbox.NotRan,
+		TestStatus: sandbox.TestNotRan,
+	}); dbErr != nil {
+		log.Error().Err(dbErr)
+
+		handleJSONResponse(w, CompileErrorResponse{
+			Errors: []string{"failed to create execution record"},
+			Code:   0,
+		}, http.StatusInternalServerError)
 	}
 
 	handleJSONResponse(w, QueueCompileResponse{ID: direct.ID}, http.StatusOK)
