@@ -129,8 +129,13 @@ type Container struct {
 	status ContainerStatus
 	events []*events.Message
 
-	runtime     time.Duration
-	compileTime time.Duration
+	// The container runtime, this can be configured to use gVisor for better safety
+	// but this has a limitation of being a linux only implementation and cannot
+	// be used during  windows development
+	runtime string
+
+	runtimeDuration     time.Duration
+	compileTimeDuration time.Duration
 
 	output []string
 
@@ -286,6 +291,7 @@ func (d *Container) execute(ctx context.Context) error {
 			WorkingDir:      "/input",
 		},
 		&container.HostConfig{
+			Runtime:    d.runtime,
 			AutoRemove: true,
 			Binds:      []string{fmt.Sprintf("%s:/input", workingDirectory)},
 			Resources: container.Resources{
@@ -355,8 +361,8 @@ func (d *Container) getSandboxStandardOutput() ([]string, error) {
 			compileDuration, _ := strconv.Atoi(compile)
 			statusCode, _ := strconv.Atoi(code)
 
-			d.runtime = time.Duration(runtimeDuration) * time.Nanosecond
-			d.compileTime = time.Duration(compileDuration) * time.Nanosecond
+			d.runtimeDuration = time.Duration(runtimeDuration) * time.Nanosecond
+			d.compileTimeDuration = time.Duration(compileDuration) * time.Nanosecond
 			d.status = ContainerStatus(statusCode)
 
 			return lines, nil
@@ -454,7 +460,7 @@ func (d *Container) GetResponse() *Response {
 		Output:      d.output,
 		Status:      d.status,
 		TestStatus:  testStatus,
-		Runtime:     d.runtime,
-		CompileTime: d.compileTime,
+		Runtime:     d.runtimeDuration,
+		CompileTime: d.compileTimeDuration,
 	}
 }
