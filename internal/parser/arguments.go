@@ -8,6 +8,7 @@ import (
 type Arguments struct {
 	DatabaseConn            string
 	MaxConcurrentContainers int
+	WaitTimeSeconds         int
 	SqsQueue                string
 
 	NsqAddress string
@@ -21,6 +22,7 @@ func ParseDefaultConfigurationArguments() Arguments {
 
 	flag.StringVar(&args.DatabaseConn, "database-connection-string", "host=database user=root password=root port=54320 dbname=compile TimeZone=UTC", "")
 	flag.IntVar(&args.MaxConcurrentContainers, "max-concurrent-containers", 5, "")
+	flag.IntVar(&args.MaxConcurrentContainers, "wait-time-seconds", 10, "")
 	flag.StringVar(&args.SqsQueue, "sqs-queue", "", "")
 
 	flag.StringVar(&args.NsqAddress, "nsq-address", "nsqd", "")

@@ -36,6 +36,8 @@ func main() {
 	args := parser.ParseDefaultConfigurationArguments()
 
 	queueRunner, err := queue.NewQueue(&queue.QueueConfig{
+		ForceLocalMode: true,
+
 		Nsq: &queue.NsqConfig{
 			Topic:            args.NsqTopic,
 			Channel:          args.NsqChannel,
@@ -44,6 +46,12 @@ func main() {
 			MaxInFlight:      args.MaxConcurrentContainers,
 			Consumer:         false,
 			Producer:         true,
+		},
+		Sqs: &queue.SqsConfig{
+			QueueURL:        args.SqsQueue,
+			WaitTimeSeconds: args.WaitTimeSeconds,
+			MaxInFlight:     args.MaxConcurrentContainers,
+			Consumer:        false,
 		},
 	})
 

@@ -41,6 +41,8 @@ func main() {
 
 	log.Info().Msg("starting Queue")
 	queueRunner, err := queue.NewQueue(&queue.QueueConfig{
+		ForceLocalMode: true,
+
 		Nsq: &queue.NsqConfig{
 			Topic:            args.NsqTopic,
 			Channel:          args.NsqChannel,
@@ -52,6 +54,15 @@ func main() {
 			Manager:          manager,
 			Repo:             repo,
 			FilesHandler:     localFileHandler,
+		},
+		Sqs: &queue.SqsConfig{
+			QueueURL:        args.SqsQueue,
+			WaitTimeSeconds: args.WaitTimeSeconds,
+			MaxInFlight:     args.MaxConcurrentContainers,
+			Consumer:        true,
+			Manager:         manager,
+			Repo:            repo,
+			FilesHandler:    localFileHandler,
 		},
 	})
 
