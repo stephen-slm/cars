@@ -1,10 +1,12 @@
 package main
 
 import (
-	"compile-and-run-sandbox/internal/files"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"compile-and-run-sandbox/internal/files"
+	"compile-and-run-sandbox/internal/parser"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
@@ -19,36 +21,9 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-
-	"github.com/namsral/flag"
 )
 
-type flags struct {
-	databaseConn string
-	sqsQueue     string
-	nsqAddress   string
-	nsqPort      int
-}
-
-func configureArgs() flags {
-	args := flags{}
-
-	flag.StringVar(&args.databaseConn, "database-connection-string", "host=localhost user=root password=root port=54320 dbname=compile TimeZone=UTC", "")
-
-	flag.StringVar(&args.sqsQueue, "sqs-queue", "", "")
-
-	flag.StringVar(&args.nsqAddress, "nsq-address", "nsqd", "")
-	flag.IntVar(&args.nsqPort, "nsq-port", 4150, "")
-
-	flag.Parse()
-
-	log.Info().Msgf("%+v parsed arguments", args)
-
-	return args
-}
-
 func getTranslator() ut.Translator {
-
 	english := en.New()
 	uni := ut.New(english, english)
 	translator, _ := uni.GetTranslator("en")
@@ -58,19 +33,18 @@ func getTranslator() ut.Translator {
 
 func main() {
 	log.Info().Msg("starting cars-api")
-
-	args := configureArgs()
+	args := parser.ParseDefaultConfigurationArguments()
 
 	producer, err := queue.NewNsqProducer(&queue.NsqParams{
-		NsqLookupAddress: args.nsqAddress,
-		NsqLookupPort:    args.nsqPort,
+		NsqLookupAddress: args.NsqAddress,
+		NsqLookupPort:    args.NsqPort,
 	})
 
 	if err != nil {
 		log.Fatal().Err(err)
 	}
 
-	repo, err := repository.NewRepository(args.databaseConn)
+	repo, err := repository.NewRepository(args.DatabaseConn)
 	localFileHandler := files.NewLocalFileHandler(filepath.Join(os.TempDir(), "executions"))
 
 	if err != nil {

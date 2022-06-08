@@ -1,12 +1,14 @@
 package main
 
 import (
-	"compile-and-run-sandbox/internal/repository"
 	"context"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
+
+	"compile-and-run-sandbox/internal/parser"
+	"compile-and-run-sandbox/internal/repository"
 
 	"github.com/docker/docker/client"
 	"github.com/rs/zerolog/log"
@@ -14,44 +16,11 @@ import (
 	"compile-and-run-sandbox/internal/files"
 	"compile-and-run-sandbox/internal/queue"
 	"compile-and-run-sandbox/internal/sandbox"
-
-	"github.com/namsral/flag"
 )
-
-type flags struct {
-	sqsQueue                string
-	maxConcurrentContainers int
-	databaseConn            string
-
-	nsqTopic   string
-	nsqChannel string
-	nsqAddress string
-	nsqPort    int
-}
-
-func configureArgs() flags {
-	args := flags{}
-
-	flag.IntVar(&args.maxConcurrentContainers, "max-concurrent-containers", 5, "")
-	flag.IntVar(&args.nsqPort, "nsq-port", 4150, "")
-
-	flag.StringVar(&args.databaseConn, "database-connection-string", "host=localhost user=root password=root port=54320 dbname=compile TimeZone=UTC", "")
-	flag.StringVar(&args.nsqAddress, "nsq-address", "nsqd", "")
-	flag.StringVar(&args.nsqChannel, "nsq-channel", "main", "")
-	flag.StringVar(&args.nsqTopic, "nsq-topic", "containers", "")
-	flag.StringVar(&args.sqsQueue, "sqs-queue", "", "")
-
-	flag.Parse()
-
-	log.Info().Msgf("%+v parsed arguments", args)
-
-	return args
-}
 
 func main() {
 	log.Info().Msg("starting cars-loader")
-
-	args := configureArgs()
+	args := parser.ParseDefaultConfigurationArguments()
 
 	log.Info().Msg("starting docker client")
 	dockerClient, dockerErr := client.NewClientWithOpts(client.FromEnv)
@@ -60,22 +29,22 @@ func main() {
 		log.Fatal().Err(dockerErr)
 	}
 
-	repo, err := repository.NewRepository(args.databaseConn)
+	repo, err := repository.NewRepository(args.DatabaseConn)
 
 	if err != nil {
 		log.Fatal().Err(err)
 	}
 
-	manager := sandbox.NewSandboxContainerManager(dockerClient, args.maxConcurrentContainers)
+	manager := sandbox.NewSandboxContainerManager(dockerClient, args.MaxConcurrentContainers)
 	localFileHandler := files.NewLocalFileHandler(filepath.Join(os.TempDir(), "executions"))
 
 	log.Info().Msg("starting NSQ consumer")
 	nsqService, err := queue.NewNsqConsumer(&queue.NsqParams{
-		Channel:          args.nsqChannel,
-		MaxInFlight:      args.maxConcurrentContainers,
-		NsqLookupAddress: args.nsqAddress,
-		NsqLookupPort:    args.nsqPort,
-		Topic:            args.nsqTopic,
+		Channel:          args.NsqChannel,
+		MaxInFlight:      args.MaxConcurrentContainers,
+		NsqLookupAddress: args.NsqAddress,
+		NsqLookupPort:    args.NsqPort,
+		Topic:            args.NsqTopic,
 	}, manager, repo, localFileHandler)
 
 	if err != nil {
