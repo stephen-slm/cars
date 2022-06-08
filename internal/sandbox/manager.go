@@ -105,6 +105,7 @@ func (s *ContainerManager) Start(ctx context.Context) {
 				container.AddDockerEventMessage(&msg)
 			}
 		default:
+			time.Sleep(50 * time.Millisecond)
 		}
 	}
 }

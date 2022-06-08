@@ -36,20 +36,20 @@ services:
     networks:
       - default
 
-  loader:
-    image: ${DOCKER_REGISTRY-}loader
-    build:
-      context: .
-      dockerfile: Dockerfile
-    networks:
-      - default
-    depends_on:
-      - nsqd
-      - database
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+#  loader:
+#    image: ${DOCKER_REGISTRY-}loader
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    networks:
+#      - default
+#    depends_on:
+#      - nsqd
+#      - database
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
 
 networks:
   default:

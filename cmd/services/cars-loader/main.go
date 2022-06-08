@@ -25,7 +25,6 @@ func main() {
 	log.Info().Msg("starting docker client")
 
 	dockerClient, dockerErr := client.NewClientWithOpts(client.FromEnv)
-	log.Info().Msgf("client %v, %v", dockerClient, dockerErr)
 
 	if dockerErr != nil {
 		log.Fatal().Err(dockerErr).Msg("failed")

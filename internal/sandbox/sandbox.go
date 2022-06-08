@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -368,6 +369,15 @@ func (d *Container) getSandboxStandardOutput() ([]string, error) {
 }
 
 func (d *Container) AddDockerEventMessage(event *events.Message) {
+	log.Info().
+		Str("action", event.Action).
+		Str("containerID", d.ID[:10]).
+		Str("from", event.From).
+		Str("requestID", d.request.ID).
+		Str("status", event.Status).
+		Str("type", event.Type).
+		Msg("handling container incoming docker event")
+
 	d.updateStatusFromDockerEvent(event.Status)
 	d.events = append(d.events, event)
 }
