@@ -16,7 +16,7 @@ Cars is an **Compile And Run Sandbox**.
   <img src="./assets/simple-design.svg" alt="Size Limit CLI" width="1080">
 </p>
 
-# What?
+## What?
 
 Cars is a Sandbox environment which allows the execution of untrusted code in a fixed time frame, fixed memory
 allocation
@@ -39,7 +39,7 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 * Python v3.9.x (https://www.python.org/)
 * NodeJs V16.x (https://nodejs.org/en/)
 
-# gVisor (https://gvisor.dev/)
+## gVisor (https://gvisor.dev/)
 
 gVisor is an application kernel, written in Go, that implements a substantial portion of the Linux system call
 interface. It provides an additional layer of isolation between running applications and the host operating system.
