@@ -23,16 +23,18 @@ func main() {
 	args := parser.ParseDefaultConfigurationArguments()
 
 	log.Info().Msg("starting docker client")
+
 	dockerClient, dockerErr := client.NewClientWithOpts(client.FromEnv)
+	log.Info().Msgf("client %v, %v", dockerClient, dockerErr)
 
 	if dockerErr != nil {
-		log.Fatal().Err(dockerErr)
+		log.Fatal().Err(dockerErr).Msg("failed")
 	}
 
 	repo, err := repository.NewRepository(args.DatabaseConn)
 
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("failed to create repository")
 	}
 
 	manager := sandbox.NewSandboxContainerManager(dockerClient, args.MaxConcurrentContainers)
@@ -55,7 +57,7 @@ func main() {
 	})
 
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("failed to create queue")
 	}
 
 	log.Info().Msg("starting sandbox manager")

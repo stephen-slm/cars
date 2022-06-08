@@ -16,9 +16,14 @@ func NewRepository(connectionURL string) (Repository, error) {
 		return nil, err
 	}
 
-	_ = db.AutoMigrate(&Execution{})
+	// ping test
+	if pingErr := pingTest(db); pingErr != nil {
+		return nil, pingErr
+	}
 
-	return Client{DB: db}, nil
+	migrateErr := db.AutoMigrate(&Execution{})
+
+	return Client{DB: db}, migrateErr
 }
 
 type Repository interface {
@@ -26,4 +31,14 @@ type Repository interface {
 	UpdateExecution(id string, columns *Execution) (bool, error)
 	UpdateExecutionStatus(id string, status string) error
 	GetExecution(id string) (Execution, error)
+}
+
+func pingTest(db *gorm.DB) error {
+	genDb, err := db.DB()
+
+	if err != nil {
+		return err
+	}
+
+	return genDb.Ping()
 }

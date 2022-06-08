@@ -53,11 +53,17 @@ func newNsqQueue(config *NsqConfig) (NsqQueue, error) {
 }
 
 func (n NsqQueue) HandleIncomingRequest(data []byte) error {
+
 	var compileMsg CompileMessage
 
 	if err := json.Unmarshal(data, &compileMsg); err != nil {
 		return errors.Wrap(err, "failed to parse compile request")
 	}
+
+	log.Info().
+		Str("id", compileMsg.ID).
+		Str("language", compileMsg.Language).
+		Msg("handling new compile request")
 
 	sourceCode, _ := n.config.FilesHandler.GetFile(compileMsg.ID, "source")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -130,7 +136,12 @@ func (n NsqQueue) HandleMessage(m *nsq.Message) error {
 		return nil
 	}
 
-	return n.HandleIncomingRequest(m.Body)
+	if err := n.HandleIncomingRequest(m.Body); err != nil {
+		log.Err(err).Msg("failed to handle incoming compile request")
+		return err
+	}
+
+	return nil
 }
 
 func NewNsqProducer(params *NsqConfig) (*nsq.Producer, error) {

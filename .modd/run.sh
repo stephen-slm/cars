@@ -1,1 +1,1 @@
-./temp/api & ./temp/loader
+./temp/api

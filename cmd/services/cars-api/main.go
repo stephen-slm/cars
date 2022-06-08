@@ -48,14 +48,14 @@ func main() {
 	})
 
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("failed to create queue")
 	}
 
 	repo, err := repository.NewRepository(args.DatabaseConn)
 	localFileHandler := files.NewLocalFileHandler(filepath.Join(os.TempDir(), "executions"))
 
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("failed to create file handler")
 	}
 
 	r := mux.NewRouter()
@@ -85,5 +85,8 @@ func main() {
 		})).Methods("GET")
 
 	log.Info().Msg("listening on :8080")
-	log.Fatal().Err(http.ListenAndServe(":8080", handlers.CompressHandler(r)))
+
+	if listenErr := http.ListenAndServe(":8080", handlers.CompressHandler(r)); listenErr != nil {
+		log.Fatal().Err(listenErr).Msg("failed to listen")
+	}
 }

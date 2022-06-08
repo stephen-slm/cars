@@ -8,10 +8,11 @@ services:
       POSTGRES_PASSWORD: root
       POSTGRES_USER: root
       POSTGRES_DB: compile
+    command: -p 54320
     ports:
-      - "54320:5432"
+      - "54320:54320"
     healthcheck:
-      test: [ "CMD", "pg_isready", "-d", "postgres" ]
+      test: ["CMD", "pg_isready", "-d", "postgres" ]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -34,6 +35,21 @@ services:
       - "4171:4171"
     networks:
       - default
+
+  loader:
+    image: ${DOCKER_REGISTRY-}loader
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - default
+    depends_on:
+      - nsqd
+      - database
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 networks:
   default:

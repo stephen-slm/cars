@@ -2,7 +2,6 @@ package sandbox
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -98,7 +97,9 @@ func (s *ContainerManager) Start(ctx context.Context) {
 
 		select {
 		case err := <-errs:
-			fmt.Println(err)
+			if err != nil {
+				log.Err(err).Msg("error from docker client")
+			}
 		case msg := <-msgs:
 			if container := s.getContainer(msg.ID); container != nil {
 				container.AddDockerEventMessage(&msg)

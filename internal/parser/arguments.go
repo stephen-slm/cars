@@ -19,7 +19,7 @@ type Arguments struct {
 func ParseDefaultConfigurationArguments() Arguments {
 	args := Arguments{}
 
-	flag.StringVar(&args.DatabaseConn, "database-connection-string", "host=localhost user=root password=root port=54320 dbname=compile TimeZone=UTC", "")
+	flag.StringVar(&args.DatabaseConn, "database-connection-string", "host=database user=root password=root port=54320 dbname=compile TimeZone=UTC", "")
 	flag.IntVar(&args.MaxConcurrentContainers, "max-concurrent-containers", 5, "")
 	flag.StringVar(&args.SqsQueue, "sqs-queue", "", "")
 
