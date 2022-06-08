@@ -35,9 +35,16 @@ func main() {
 	log.Info().Msg("starting cars-api")
 	args := parser.ParseDefaultConfigurationArguments()
 
-	producer, err := queue.NewNsqProducer(&queue.NsqParams{
-		NsqLookupAddress: args.NsqAddress,
-		NsqLookupPort:    args.NsqPort,
+	queueRunner, err := queue.NewQueue(&queue.QueueConfig{
+		Nsq: &queue.NsqConfig{
+			Topic:            args.NsqTopic,
+			Channel:          args.NsqChannel,
+			NsqLookupAddress: args.NsqAddress,
+			NsqLookupPort:    args.NsqPort,
+			MaxInFlight:      args.MaxConcurrentContainers,
+			Consumer:         false,
+			Producer:         true,
+		},
 	})
 
 	if err != nil {
@@ -65,7 +72,7 @@ func main() {
 		LoggingHandler(os.Stdout, routing.CompilerHandler{
 			FileHandler: localFileHandler,
 			Repo:        repo,
-			Publisher:   producer,
+			Queue:       queueRunner,
 			Translator:  translator,
 			Validator:   validate,
 		})).

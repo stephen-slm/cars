@@ -1,13 +1,14 @@
 package routing
 
 import (
-	"compile-and-run-sandbox/internal/files"
-	"compile-and-run-sandbox/internal/queue"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+
+	"compile-and-run-sandbox/internal/files"
+	"compile-and-run-sandbox/internal/queue"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -15,7 +16,6 @@ import (
 
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
-	"github.com/nsqio/go-nsq"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
@@ -107,7 +107,7 @@ type CompilerHandler struct {
 	Repo        repository.Repository
 	Translator  ut.Translator
 	Validator   *validator.Validate
-	Publisher   *nsq.Producer
+	Queue       queue.Queue
 }
 
 func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +143,7 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ExpectedStdoutData: direct.ExpectedStdoutData,
 	})
 
-	err := h.Publisher.Publish("containers", bytes)
+	err := h.Queue.SubmitMessageToQueue(bytes)
 
 	if err != nil {
 		log.Error().Err(err)

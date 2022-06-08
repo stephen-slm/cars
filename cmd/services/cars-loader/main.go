@@ -38,14 +38,21 @@ func main() {
 	manager := sandbox.NewSandboxContainerManager(dockerClient, args.MaxConcurrentContainers)
 	localFileHandler := files.NewLocalFileHandler(filepath.Join(os.TempDir(), "executions"))
 
-	log.Info().Msg("starting NSQ consumer")
-	nsqService, err := queue.NewNsqConsumer(&queue.NsqParams{
-		Channel:          args.NsqChannel,
-		MaxInFlight:      args.MaxConcurrentContainers,
-		NsqLookupAddress: args.NsqAddress,
-		NsqLookupPort:    args.NsqPort,
-		Topic:            args.NsqTopic,
-	}, manager, repo, localFileHandler)
+	log.Info().Msg("starting Queue")
+	queueRunner, err := queue.NewQueue(&queue.QueueConfig{
+		Nsq: &queue.NsqConfig{
+			Topic:            args.NsqTopic,
+			Channel:          args.NsqChannel,
+			NsqLookupAddress: args.NsqAddress,
+			NsqLookupPort:    args.NsqPort,
+			MaxInFlight:      args.MaxConcurrentContainers,
+			Consumer:         true,
+			Producer:         false,
+			Manager:          manager,
+			Repo:             repo,
+			FilesHandler:     localFileHandler,
+		},
+	})
 
 	if err != nil {
 		log.Fatal().Err(err)
@@ -60,5 +67,5 @@ func main() {
 	<-sigChan
 
 	manager.Stop()
-	nsqService.Stop()
+	queueRunner.Stop()
 }

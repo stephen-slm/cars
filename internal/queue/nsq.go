@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"compile-and-run-sandbox/internal/repository"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,76 +9,57 @@ import (
 	"strings"
 	"time"
 
+	"compile-and-run-sandbox/internal/repository"
+
 	"github.com/google/uuid"
 	"github.com/nsqio/go-nsq"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
-	"compile-and-run-sandbox/internal/files"
 	"compile-and-run-sandbox/internal/sandbox"
 )
 
-type NsqParams struct {
-	Topic            string
-	Channel          string
-	NsqLookupAddress string
-	NsqLookupPort    int
-	MaxInFlight      int
-}
+type NsqQueue struct {
+	config *NsqConfig
 
-type NsqConsumer struct {
 	consumer *nsq.Consumer
+	producer *nsq.Producer
 }
 
-func NewNsqProducer(params *NsqParams) (*nsq.Producer, error) {
-	address := fmt.Sprintf("%s:%d", params.NsqLookupAddress, params.NsqLookupPort)
-	return nsq.NewProducer(address, nsq.NewConfig())
-}
+func newNsqQueue(config *NsqConfig) (NsqQueue, error) {
+	queue := NsqQueue{config: config}
 
-func NewNsqConsumer(params *NsqParams, manager *sandbox.ContainerManager, repo repository.Repository, fileHandler files.Files) (*NsqConsumer, error) {
-	config := nsq.NewConfig()
-	config.MaxInFlight = params.MaxInFlight
+	if config.Consumer {
+		newConsumer, err := NewNsqConsumer(config, queue)
 
-	consumer, err := nsq.NewConsumer(params.Topic, params.Channel, config)
+		if err != nil {
+			return queue, err
+		}
 
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create NSQ consumer")
+		queue.consumer = newConsumer
 	}
 
-	consumer.AddConcurrentHandlers(&nsqConsumerMessageHandler{
-		repo:         repo,
-		filesHandler: fileHandler,
-		manager:      manager,
-	}, params.MaxInFlight)
+	if config.Producer {
+		newProducer, err := NewNsqProducer(config)
 
-	address := fmt.Sprintf("%s:%d", params.NsqLookupAddress, params.NsqLookupPort)
-	err = consumer.ConnectToNSQD(address)
+		if err != nil {
+			return queue, err
+		}
 
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to NSQ lookup")
+		queue.producer = newProducer
 	}
 
-	return &NsqConsumer{}, nil
+	return queue, nil
 }
 
-type nsqConsumerMessageHandler struct {
-	repo         repository.Repository
-	manager      *sandbox.ContainerManager
-	filesHandler files.Files
-}
-
-func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
-	if len(m.Body) == 0 {
-		return nil
-	}
-
+func (n NsqQueue) HandleIncomingRequest(data []byte) error {
 	var compileMsg CompileMessage
 
-	if err := json.Unmarshal(m.Body, &compileMsg); err != nil {
+	if err := json.Unmarshal(data, &compileMsg); err != nil {
 		return errors.Wrap(err, "failed to parse compile request")
 	}
 
-	sourceCode, _ := h.filesHandler.GetFile(compileMsg.ID, "source")
+	sourceCode, _ := n.config.FilesHandler.GetFile(compileMsg.ID, "source")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -101,26 +81,26 @@ func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
 		}
 	}
 
-	_ = h.repo.UpdateExecutionStatus(compileMsg.ID, sandbox.Created.String())
-	containerID, complete, err := h.manager.AddContainer(ctx, &sandboxRequest)
+	_ = n.config.Repo.UpdateExecutionStatus(compileMsg.ID, sandbox.Created.String())
+	containerID, complete, err := n.config.Manager.AddContainer(ctx, &sandboxRequest)
 
 	if err != nil {
-		_ = h.repo.UpdateExecutionStatus(compileMsg.ID, sandbox.NonDeterministicError.String())
-		return errors.Wrap(err, "failed to add container to manager")
+		_ = n.config.Repo.UpdateExecutionStatus(compileMsg.ID, sandbox.NonDeterministicError.String())
+		return errors.Wrap(err, "failed to add container to Manager")
 	}
 
-	_ = h.repo.UpdateExecutionStatus(compileMsg.ID, sandbox.Running.String())
+	_ = n.config.Repo.UpdateExecutionStatus(compileMsg.ID, sandbox.Running.String())
 
 	<-complete
 
-	resp := h.manager.GetResponse(ctx, containerID)
+	resp := n.config.Manager.GetResponse(ctx, containerID)
 
-	_ = h.filesHandler.WriteFile(sandboxRequest.ID, "output",
+	_ = n.config.FilesHandler.WriteFile(sandboxRequest.ID, "output",
 		[]byte(strings.Join(resp.Output, "\r\n")))
 
-	_ = h.manager.RemoveContainer(context.Background(), containerID, false)
+	_ = n.config.Manager.RemoveContainer(context.Background(), containerID, false)
 
-	_, _ = h.repo.UpdateExecution(compileMsg.ID, &repository.Execution{
+	_, _ = n.config.Repo.UpdateExecution(compileMsg.ID, &repository.Execution{
 		Status:     resp.Status.String(),
 		TestStatus: resp.TestStatus.String(),
 		CompileMs:  resp.CompileTime.Milliseconds(),
@@ -130,8 +110,52 @@ func (h *nsqConsumerMessageHandler) HandleMessage(m *nsq.Message) error {
 	return nil
 }
 
-func (n NsqConsumer) Stop() {
-	log.Info().Msg("stopping NSQ consumer")
+func (n NsqQueue) SubmitMessageToQueue(data []byte) error {
+	err := n.producer.Publish(n.config.Topic, data)
 
+	if err != nil {
+		return errors.Wrap(err, "failed to publish message onto the queue")
+	}
+
+	return nil
+}
+
+func (n NsqQueue) Stop() {
+	log.Info().Msg("stopping NSQ consumer")
 	n.consumer.Stop()
+}
+
+func (n NsqQueue) HandleMessage(m *nsq.Message) error {
+	if len(m.Body) == 0 {
+		return nil
+	}
+
+	return n.HandleIncomingRequest(m.Body)
+}
+
+func NewNsqProducer(params *NsqConfig) (*nsq.Producer, error) {
+	address := fmt.Sprintf("%s:%d", params.NsqLookupAddress, params.NsqLookupPort)
+	return nsq.NewProducer(address, nsq.NewConfig())
+}
+
+func NewNsqConsumer(params *NsqConfig, handler nsq.Handler) (*nsq.Consumer, error) {
+	config := nsq.NewConfig()
+	config.MaxInFlight = params.MaxInFlight
+
+	consumer, err := nsq.NewConsumer(params.Topic, params.Channel, config)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create NSQ consumer")
+	}
+
+	consumer.AddConcurrentHandlers(handler, params.MaxInFlight)
+
+	address := fmt.Sprintf("%s:%d", params.NsqLookupAddress, params.NsqLookupPort)
+	err = consumer.ConnectToNSQD(address)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to NSQ lookup")
+	}
+
+	return consumer, nil
 }
