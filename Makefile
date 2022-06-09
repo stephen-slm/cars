@@ -16,6 +16,14 @@ build-docker-images: ## Builds all the required docker images
 clean: ## Remove build artifacts.
 	rm -rf $(GOBIN)
 
+.PHONY: update-containers
+update-containers: ##  Update the containers
+	@sh ./update-docker.sh
+
+.PHONY: update-containers/verbose
+update-containers/verbose: ##  Update the containers with verbose output
+	@sh ./update-docker.sh true
+
 .PHONY: generate
 generate: install-tools ## Generate mocks, florence features and other code.
 	@go generate ./...

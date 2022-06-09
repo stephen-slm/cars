@@ -1,14 +1,18 @@
-echo "Creating Docker Image - Python"
-docker build --progress=plain -f ./build/dockerfiles/DockerfilePython -t virtual_machine_python .
+#! /usr/bin/env bash
 
-echo "Creating Docker Image - Node"
-docker build --progress=plain -f ./build/dockerfiles/DockerfileNode -t virtual_machine_node .
+RED="\e[31m"
+GREEN="\e[32m"
+ENDCOLOR="\e[0m"
 
-echo "Creating Docker Image - Rust"
-docker build --progress=plain -f ./build/dockerfiles/DockerfileRust -t virtual_machine_rs .
+for FILE in ./build/dockerfiles/*; do
+  echo "${GREEN}Creating Docker Image${ENDCOLOR} - ${RED}${FILE##*dockerfiles\/}${ENDCOLOR}"
 
-#echo "Creating Docker Image - CSharp"
-#docker build --progress=plain -f ./build/dockerfiles/DockerFileCSharp -t virtual_machine_cs .
+  if [ -z "$1" ]
+    then
+      docker build -f $FILE -t "virtual_machine_${FILE##*dockerfiles\/Dockerfile.}" . > /dev/null
+    else
+      docker build --progress=plain -f $FILE -t "virtual_machine_${FILE##*dockerfiles\/Dockerfile.}" .
+  fi
+  echo "${GREEN}Completed Building Docker Image${ENDCOLOR} - ${RED}${FILE##*dockerfiles\/}${ENDCOLOR}"
+done
 
-echo "Retrieving Installed Docker Images"
-docker images
