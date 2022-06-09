@@ -38,8 +38,8 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 
 * Python v3.9.x (https://python.org)
 * NodeJs v16.x (https://nodejs.org)
-* Rust v1.61.0 (https://rust-lang.org)
-* Ruby v3.1.2 (https://ruby-lang.org)
+* Rust v1.61.x (https://rust-lang.org)
+* Ruby v3.1.x (https://ruby-lang.org)
 * Go v1.18.x (https://go.dev)
 
 ## gVisor (https://gvisor.dev/)
