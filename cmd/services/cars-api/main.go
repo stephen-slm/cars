@@ -60,7 +60,16 @@ func main() {
 	}
 
 	repo, err := repository.NewRepository(args.DatabaseConn)
-	localFileHandler := files.NewLocalFileHandler(filepath.Join(os.TempDir(), "executions"))
+
+	localFileHandler, err := files.NewFilesHandler(&files.FilesConfig{
+		Local:          &files.LocalConfig{LocalRootPath: filepath.Join(os.TempDir(), "executions")},
+		S3:             &files.S3Config{BucketName: args.S3BucketName},
+		ForceLocalMode: true,
+	})
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to create file handler")
+	}
 
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create file handler")

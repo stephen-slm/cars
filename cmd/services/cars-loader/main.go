@@ -37,7 +37,16 @@ func main() {
 	}
 
 	manager := sandbox.NewSandboxContainerManager(dockerClient, args.MaxConcurrentContainers)
-	localFileHandler := files.NewLocalFileHandler(filepath.Join(os.TempDir(), "executions"))
+
+	localFileHandler, err := files.NewFilesHandler(&files.FilesConfig{
+		Local:          &files.LocalConfig{LocalRootPath: filepath.Join(os.TempDir(), "executions")},
+		S3:             &files.S3Config{BucketName: args.S3BucketName},
+		ForceLocalMode: true,
+	})
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to create file handler")
+	}
 
 	log.Info().Msg("starting Queue")
 	queueRunner, err := queue.NewQueue(&queue.QueueConfig{

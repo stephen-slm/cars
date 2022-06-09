@@ -8,18 +8,18 @@ import (
 )
 
 type LocalFiles struct {
-	rootPath string
+	config *LocalConfig
 }
 
-// NewLocalFileHandler is the local handler used during development to
+// newLocalFiles is the local handler used during development to
 // write the source code and output files to disk instead of a S3 bucket
 // or another location.
-func NewLocalFileHandler(rootPath string) LocalFiles {
-	return LocalFiles{rootPath: rootPath}
+func newLocalFiles(config *LocalConfig) (LocalFiles, error) {
+	return LocalFiles{config: config}, nil
 }
 
 func (l LocalFiles) WriteFile(id string, name string, data []byte) error {
-	folderDirectory := filepath.Join(l.rootPath, id)
+	folderDirectory := filepath.Join(l.config.LocalRootPath, id)
 	filePath := filepath.Join(folderDirectory, name)
 
 	if err := os.MkdirAll(folderDirectory, 0o750); err != nil {
@@ -42,7 +42,7 @@ func (l LocalFiles) WriteFile(id string, name string, data []byte) error {
 }
 
 func (l LocalFiles) GetFile(id string, name string) ([]byte, error) {
-	folderDirectory := filepath.Join(l.rootPath, id)
+	folderDirectory := filepath.Join(l.config.LocalRootPath, id)
 	filePath := filepath.Join(folderDirectory, name)
 
 	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {

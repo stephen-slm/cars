@@ -10,6 +10,7 @@ type Arguments struct {
 	MaxConcurrentContainers int
 	WaitTimeSeconds         int
 	SqsQueue                string
+	S3BucketName            string
 
 	NsqAddress string
 	NsqChannel string
@@ -24,6 +25,7 @@ func ParseDefaultConfigurationArguments() Arguments {
 	flag.IntVar(&args.MaxConcurrentContainers, "max-concurrent-containers", 5, "")
 	flag.IntVar(&args.MaxConcurrentContainers, "wait-time-seconds", 10, "")
 	flag.StringVar(&args.SqsQueue, "sqs-queue", "", "")
+	flag.StringVar(&args.S3BucketName, "s3-bucket", "", "")
 
 	flag.StringVar(&args.NsqAddress, "nsq-address", "nsqd", "")
 	flag.StringVar(&args.NsqChannel, "nsq-channel", "main", "")
