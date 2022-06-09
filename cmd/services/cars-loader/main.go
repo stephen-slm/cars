@@ -38,7 +38,7 @@ func main() {
 
 	manager := sandbox.NewSandboxContainerManager(dockerClient, args.MaxConcurrentContainers)
 
-	localFileHandler, err := files.NewFilesHandler(&files.FilesConfig{
+	localFileHandler, err := files.NewFilesHandler(&files.Config{
 		Local:          &files.LocalConfig{LocalRootPath: filepath.Join(os.TempDir(), "executions")},
 		S3:             &files.S3Config{BucketName: args.S3BucketName},
 		ForceLocalMode: true,
@@ -49,7 +49,7 @@ func main() {
 	}
 
 	log.Info().Msg("starting Queue")
-	queueRunner, err := queue.NewQueue(&queue.QueueConfig{
+	queueRunner, err := queue.NewQueue(&queue.Config{
 		ForceLocalMode: true,
 
 		Nsq: &queue.NsqConfig{

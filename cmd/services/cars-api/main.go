@@ -35,7 +35,7 @@ func main() {
 	log.Info().Msg("starting cars-api")
 	args := parser.ParseDefaultConfigurationArguments()
 
-	queueRunner, err := queue.NewQueue(&queue.QueueConfig{
+	queueRunner, err := queue.NewQueue(&queue.Config{
 		ForceLocalMode: true,
 
 		Nsq: &queue.NsqConfig{
@@ -59,9 +59,13 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to create queue")
 	}
 
-	repo, err := repository.NewRepository(args.DatabaseConn)
+	repo, respErr := repository.NewRepository(args.DatabaseConn)
 
-	localFileHandler, err := files.NewFilesHandler(&files.FilesConfig{
+	if respErr != nil {
+		log.Fatal().Err(respErr).Msg("failed to create database connection")
+	}
+
+	localFileHandler, err := files.NewFilesHandler(&files.Config{
 		Local:          &files.LocalConfig{LocalRootPath: filepath.Join(os.TempDir(), "executions")},
 		S3:             &files.S3Config{BucketName: args.S3BucketName},
 		ForceLocalMode: true,
