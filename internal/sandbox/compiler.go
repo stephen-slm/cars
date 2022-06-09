@@ -41,7 +41,7 @@ var Compilers = map[string]LanguageCompiler{
 		InputFile:          "input",
 	},
 	"cs": {
-		language: "cs",
+		language: "C#",
 		compileSteps: []string{
 			"mv /input/source /project/Program.cs",
 			"dotnet build -c Release --no-restore -o /out /project",
@@ -49,6 +49,17 @@ var Compilers = map[string]LanguageCompiler{
 		runSteps:           "dotnet /out/project.dll",
 		interpreter:        false,
 		VirtualMachineName: "virtual_machine_cs",
+		OutputFile:         "output",
+		InputFile:          "input",
+	},
+	"rust": {
+		language: "Rust",
+		runSteps: "/out",
+		compileSteps: []string{
+			"rustc -o /out /input/source",
+		},
+		interpreter:        false,
+		VirtualMachineName: "virtual_machine_rs",
 		OutputFile:         "output",
 		InputFile:          "input",
 	},
