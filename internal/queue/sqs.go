@@ -21,9 +21,13 @@ type SqsQueue struct {
 func newSqsQueue(config *SqsConfig) (SqsQueue, error) {
 	queue := SqsQueue{config: config}
 
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
+	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
-	}))
+	})
+
+	if err != nil {
+		return queue, err
+	}
 
 	queue.sqsQueue = sqs.New(sess)
 
