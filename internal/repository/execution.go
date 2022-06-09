@@ -7,6 +7,7 @@ import (
 type Execution struct {
 	ID string `gorm:"primarykey"`
 
+	Language   string
 	Status     string
 	TestStatus string
 

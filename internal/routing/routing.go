@@ -156,6 +156,7 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	dbErr := h.Repo.InsertExecution(&repository.Execution{
 		ID:         requestID,
+		Language:   direct.Language,
 		Status:     sandbox.NotRan.String(),
 		TestStatus: sandbox.TestNotRan.String(),
 	})
