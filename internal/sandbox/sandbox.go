@@ -69,32 +69,40 @@ type Test struct {
 }
 
 type Request struct {
-	// The internal id of the request, this will be used to ensure that when the response comes
-	// through that there is a related id to match it up with th request.
+	// The internal id of the request, this will be used to ensure that when the
+	// response comes through that there is a related id to match it up with the
+	// request.
 	ID string
-	// The max amount of timeout for the given executed code, if the code docker container is running
-	// for longer than the given timeout then the code is rejected. This is used to ensure that the
-	// source code is not running for longer than required.
+	// The max amount of timeout for the given executed code, if the code docker
+	// container is running for longer than the given timeout then the code is
+	// rejected. This is used to ensure that the source code is not running for
+	// longer than required.
 	Timeout int
-	// The max amount of timeout for a given container to execute the entire code including compiling.
-	// if this is not set then it will be based on timeout + 50%.
+	// The max amount of timeout for a given container to execute the entire
+	// code including compiling. if this is not set then it will be based on
+	// timeout + 50%.
 	ContainerTimeout int
-	// The upper limit of the max amount of memory that the given execution can perform. By default, the upper
-	// limit of the amount of mb the given execution can run with.
+	// The upper limit of the max amount of memory that the given execution can
+	// perform. By default, the upper limit of the amount of mb the given
+	// execution can run with.
 	MemoryConstraint int64
-	// The given path that would be mounted and shared with the given docker container. This is where
-	// the container will be reading the source code from and writing the response too. Once this has
-	// been completed, this is the path to files that will be cleaned up.
+	// The given path that would be mounted and shared with the given docker
+	// container. This is where the container will be reading the source code
+	// from and writing the response too. Once this has been completed, this
+	// is the path to files that
+	// will be cleaned up.
 	Path string
-	// The source code that will be executed, this is the code that will be written to the path and
-	// mounted to the docker container.
+	// The source code that will be executed, this is the code that will be
+	// written to the path and mounted to the docker container.
 	SourceCode string
-	// The reference details of the compilerName that will be running the code. Including details of the
-	// language, compilerName name (or interrupter) and the name of the given output file.
+	// The reference details of the compilerName that will be running the code.
+	// Including details of the language, compilerName name (or interrupter)
+	// and the name of the given output file.
 	Compiler LanguageCompiler
-	// The related test that will be executed with the sandbox, comparing a given input with
-	// a given output. This is a optional part since the process could just be completing the
-	// code and not actually testing anything.
+	// The related test that will be executed with the sandbox, comparing a
+	// given input with a given output. This is an optional part since the
+	// process could just be completing the code and not actually testing
+	// anything.
 	Test *Test
 }
 
@@ -132,6 +140,9 @@ type Container struct {
 	// The container runtime, this can be configured to use gVisor for better safety
 	// but this has a limitation of being a linux only implementation and cannot
 	// be used during  windows development
+	//
+	// If left empty then the default container runtime will be used.
+	//	Runtime string
 	runtime string
 
 	runtimeDuration     time.Duration
@@ -153,6 +164,10 @@ func NewSandboxContainer(request *Request, dockerClient *client.Client) *Contain
 		request: request,
 		events:  []*events.Message{},
 	}
+}
+
+func (d *Container) SetRuntime(runtime string) {
+	d.runtime = runtime
 }
 
 // Run the sandbox container with the given configuration options.

@@ -54,8 +54,6 @@ type CompileErrorResponse struct {
 func handleJSONResponse(w http.ResponseWriter, body any, code int) {
 	response, _ := json.Marshal(body)
 
-	fmt.Println(string(response))
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, _ = w.Write(response)
