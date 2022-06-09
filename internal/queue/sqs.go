@@ -62,7 +62,7 @@ func (s SqsQueue) startPollingMessages() {
 		wg := sync.WaitGroup{}
 
 		for _, message := range output.Messages {
-			if len(*message.Body) == 0 {
+			if *message.Body == "" {
 				continue
 			}
 
@@ -110,6 +110,10 @@ func (s SqsQueue) SubmitMessageToQueue(data []byte) error {
 	return err
 }
 
-func (s SqsQueue) Stop() {
+func (s *SqsQueue) setStopFlag() {
 	s.stopFlag = true
+}
+
+func (s SqsQueue) Stop() {
+	s.setStopFlag()
 }

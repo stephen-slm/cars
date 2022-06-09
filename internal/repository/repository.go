@@ -34,11 +34,11 @@ type Repository interface {
 }
 
 func pingTest(db *gorm.DB) error {
-	genDb, err := db.DB()
+	genDB, err := db.DB()
 
 	if err != nil {
 		return err
 	}
 
-	return genDb.Ping()
+	return genDB.Ping()
 }

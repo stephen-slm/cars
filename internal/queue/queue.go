@@ -57,7 +57,7 @@ type SqsConfig struct {
 	FilesHandler files.Files
 }
 
-type QueueConfig struct {
+type Config struct {
 	// The configuration for the NSQ queue which is used in local mode. This will only
 	// be used if SqsQueue is not defined or local mode is enforced.
 	Nsq *NsqConfig
@@ -76,7 +76,7 @@ type Queue interface {
 	Stop()
 }
 
-func NewQueue(config *QueueConfig) (Queue, error) {
+func NewQueue(config *Config) (Queue, error) {
 	if config.ForceLocalMode || config.Sqs == nil || config.Sqs.QueueURL == "" {
 		return newNsqQueue(config.Nsq)
 	}

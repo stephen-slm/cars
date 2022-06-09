@@ -13,12 +13,12 @@ type S3Config struct {
 	BucketName string
 }
 
-type FilesConfig struct {
+type Config struct {
 	// The configuration for the local files which is used in local mode. This will only
 	// be used if S3Config is not defined or local mode is enforced.
 	Local *LocalConfig
 
-	// The configuration for the S3 bucket. This will only be used if FilesConfig
+	// The configuration for the S3 bucket. This will only be used if Config
 	// is not defined or local mode is enforced.
 	S3 *S3Config
 
@@ -31,7 +31,7 @@ type Files interface {
 	GetFile(id string, name string) ([]byte, error)
 }
 
-func NewFilesHandler(config *FilesConfig) (Files, error) {
+func NewFilesHandler(config *Config) (Files, error) {
 	if config.ForceLocalMode || config.S3 == nil || config.S3.BucketName == "" {
 		return newLocalFiles(config.Local)
 	}

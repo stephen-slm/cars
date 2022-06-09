@@ -52,6 +52,7 @@ func (s S3Files) GetFile(id string, name string) ([]byte, error) {
 	})
 
 	if err != nil {
+		// nolint:errorlint // aws does not expose the error type
 		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == s3.ErrCodeNoSuchKey {
 			return nil, errors.Wrapf(err, "cannot locate file %s", name)
 		}
