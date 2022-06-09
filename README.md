@@ -36,9 +36,11 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 
 ## Supported Programming Languages
 
-* Python v3.9.x (https://www.python.org/)
-* NodeJs v16.x (https://nodejs.org/en/)
-* Rust v1.61.0 (https://www.rust-lang.org/)
+* Python v3.9.x (https://python.org)
+* NodeJs v16.x (https://nodejs.org)
+* Rust v1.61.0 (https://rust-lang.org)
+* Ruby v3.1.2 (https://ruby-lang.org)
+* Go v1.18.x (https://go.dev)
 
 ## gVisor (https://gvisor.dev/)
 

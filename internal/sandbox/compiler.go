@@ -59,4 +59,16 @@ var Compilers = map[string]LanguageCompiler{
 		OutputFile:         "output",
 		InputFile:          "input",
 	},
+	"go": {
+		language: "Go",
+		runSteps: "/out",
+		compileSteps: []string{
+			"cp /input/source /project/main.go",
+			"go build -o /out /project/main.go",
+		},
+		interpreter:        false,
+		VirtualMachineName: "virtual_machine_go",
+		OutputFile:         "output",
+		InputFile:          "input",
+	},
 }
