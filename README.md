@@ -48,10 +48,10 @@ gVisor is an application kernel, written in Go, that implements a substantial po
 interface. It provides an additional layer of isolation between running applications and the host operating system.
 
 
-[license-badge]: https://img.shields.io/github/license/stephensli/cars?style=flat-square
+[license-badge]: https://img.shields.io/github/license/stephensli/Cars?style=flat-square
 
-[go-version-badge]: https://img.shields.io/github/go-mod/go-version/stephensli/cars?style=flat-square
+[go-version-badge]: https://img.shields.io/github/go-mod/go-version/stephensli/Cars?style=flat-square
 
-[build-badge]: https://img.shields.io/github/workflow/status/stephensli/cars/go?style=flat-square
+[build-badge]: https://img.shields.io/github/workflow/status/stephensli/cars/Go?style=flat-square
 
-[release-version-badge]: https://img.shields.io/github/v/release/stephensli/cars?style=flat-square
+[release-version-badge]: https://img.shields.io/github/v/release/stephensli/Cars?style=flat-square
