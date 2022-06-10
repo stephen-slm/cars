@@ -71,4 +71,15 @@ var Compilers = map[string]LanguageCompiler{
 		OutputFile:         "output",
 		InputFile:          "input",
 	},
+	"haskell": {
+		language: "Haskell",
+		runSteps: "/out",
+		compileSteps: []string{
+			"ghc -x hs -o /out /input/source",
+		},
+		interpreter:        false,
+		VirtualMachineName: "virtual_machine_haskell",
+		OutputFile:         "output",
+		InputFile:          "input",
+	},
 }
