@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine as BUILDER
+FROM golang:1.18 as BUILDER
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM python:3.9-alpine
+FROM pypy:3.9-slim
 
 COPY --from=BUILDER /runner /runner
-RUN apk --update add sudo bc coreutils
+RUN apt-get install coreutils
