@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM pypy:3.9-slim
+FROM haskell:9-slim
 
 COPY --from=BUILDER /runner /runner
 RUN apt-get install coreutils
