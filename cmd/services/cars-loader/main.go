@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/rs/zerolog"
+
 	"compile-and-run-sandbox/internal/parser"
 	"compile-and-run-sandbox/internal/repository"
 
@@ -19,6 +21,8 @@ import (
 )
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	log.Info().Msg("starting cars-loader")
 	args := parser.ParseDefaultConfigurationArguments()
 

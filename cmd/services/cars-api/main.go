@@ -36,6 +36,7 @@ func getTranslator() ut.Translator {
 
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	log.Info().Msg("starting cars-api")
 	args := parser.ParseDefaultConfigurationArguments()
 
