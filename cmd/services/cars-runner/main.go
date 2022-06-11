@@ -14,7 +14,7 @@ import (
 	"compile-and-run-sandbox/internal/sandbox"
 )
 
-func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (compileTimeNano int64, err error) {
+func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (compilerOutput []string, compileTimeNano int64, err error) {
 	// this has to be defined here since we always want this total time
 	// and the total time is determined in to defer func.
 	var timeAtExecution time.Time
@@ -46,7 +46,7 @@ func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (c
 		output, cmdErr := cmd.CombinedOutput()
 
 		if len(output) != 0 {
-			fmt.Print(string(output))
+			compilerOutput = strings.Split(string(output), "\n")
 		}
 
 		// We want to check the context error to see if the timeout was executed.
@@ -63,7 +63,7 @@ func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (c
 	return
 }
 
-func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (runtimeNano int64, err error) {
+func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (runOutput []string, runtimeNano int64, err error) {
 	// this has to be defined here since we always want this total time
 	// and the total time is determined in to defer func.
 	var timeAtExecution time.Time
@@ -88,7 +88,9 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (runti
 	output, cmdErr := cmd.CombinedOutput()
 
 	if len(output) != 0 {
-		fmt.Print(string(output))
+		// trim the last new line if any to correctly allow testing of output
+		trimmedOutput := strings.TrimSuffix(string(output), "\n")
+		runOutput = strings.Split(trimmedOutput, "\n")
 	}
 
 	// We want to check the context error to see if the timeout was executed.
@@ -123,17 +125,13 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	var compilerOutput, runOutput []string
 	var runtime, compileTime int64
 	var compileErr, runtimeErr error
 
 	// configure the file for th compiled output, this is the text
 	// outputted when the compiler is running.
-	compileTarget, _ := os.Create(fmt.Sprintf("/input/%s", params.CompilerOut))
-	defer compileTarget.Close()
-
-	os.Stdout = compileTarget
-
-	compileTime, compileErr = compileProject(ctx, &params)
+	compilerOutput, compileTime, compileErr = compileProject(ctx, &params)
 
 	if compileErr != nil {
 		if errors.Is(compileErr, context.DeadlineExceeded) {
@@ -144,14 +142,9 @@ func main() {
 	}
 
 	// output file for the actual execution
-	executionTarget, _ := os.Create(fmt.Sprintf("/input/%s", params.StandardOut))
-	defer executionTarget.Close()
-
-	os.Stdout = executionTarget
-
 	if responseCode == sandbox.Finished {
 
-		runtime, runtimeErr = runProject(ctx, &params)
+		runOutput, runtime, runtimeErr = runProject(ctx, &params)
 
 		if runtimeErr != nil {
 			if errors.Is(runtimeErr, context.DeadlineExceeded) {
@@ -162,5 +155,13 @@ func main() {
 		}
 	}
 
-	fmt.Println("*-COMPILE::EOF-*", runtime, compileTime, int(responseCode))
+	resp, _ := json.Marshal(sandbox.ExecutionResponse{
+		Runtime:        runtime,
+		CompileTime:    compileTime,
+		Output:         runOutput,
+		CompilerOutput: compilerOutput,
+		Status:         responseCode,
+	})
+
+	_ = os.WriteFile(fmt.Sprintf("/input/%s", "runner-out.json"), resp, os.ModePerm)
 }

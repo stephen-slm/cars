@@ -170,7 +170,7 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if dbErr != nil {
-		log.Error().Err(dbErr)
+		log.Error().Err(dbErr).Msg("failed to create execution record")
 
 		handleJSONResponse(w, CompileErrorResponse{
 			Errors: []string{"failed to create execution record"},

@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
@@ -19,9 +18,9 @@ import (
 
 type CompileMessage struct {
 	ID                 string   `json:"id"`
-	Language           string   `json:"language" validate:"required,oneof=python node"`
-	StdinData          []string `json:"stdin_data" validate:"required"`
-	ExpectedStdoutData []string `json:"expected_stdout_data" validate:"required"`
+	Language           string   `json:"language"`
+	StdinData          []string `json:"stdin_data"`
+	ExpectedStdoutData []string `json:"expected_stdout_data"`
 }
 
 type NsqConfig struct {
@@ -106,7 +105,7 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 		ID:               compileMsg.ID,
 		Timeout:          1,
 		MemoryConstraint: 1024,
-		Path:             filepath.Join(os.TempDir(), "executions", uuid.NewString()),
+		Path:             filepath.Join(os.TempDir(), "executions/raw", compileMsg.ID),
 		SourceCode:       string(sourceCode),
 		Compiler:         compiler,
 		Test:             nil,
@@ -137,14 +136,14 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 	uploadFiles := []*files.File{{
 		Id:   sandboxRequest.ID,
 		Name: compiler.OutputFile,
-		Data: []byte(strings.Join(resp.Output, "\r\n")),
+		Data: []byte(strings.Join(resp.Output, "\n")),
 	}}
 
 	if !sandboxRequest.Compiler.Interpreter {
 		uploadFiles = append(uploadFiles, &files.File{
 			Id:   sandboxRequest.ID,
 			Name: compiler.CompilerOutputFile,
-			Data: []byte(strings.Join(resp.CompilerOutput, "\r\n")),
+			Data: []byte(strings.Join(resp.CompilerOutput, "\n")),
 		})
 
 	}

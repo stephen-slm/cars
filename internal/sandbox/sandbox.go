@@ -4,14 +4,11 @@
 package sandbox
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -108,12 +105,18 @@ type Request struct {
 
 type ExecutionParameters struct {
 	Language      string   `json:"language"`
-	StandardOut   string   `json:"standardOut"`
-	CompilerOut   string   `json:"standardCompilerOut"`
 	StandardInput string   `json:"standardInput"`
 	CompileSteps  []string `json:"compileSteps"`
 	Run           string   `json:"runSteps"`
 	RunTimeoutSec int      `json:"runTimeoutSec"`
+}
+
+type ExecutionResponse struct {
+	Runtime        int64           `json:"runTime"`
+	Status         ContainerStatus `json:"status"`
+	CompileTime    int64           `json:"compileTime"`
+	Output         []string        `json:"output"`
+	CompilerOutput []string        `json:"compilerOutput"`
 }
 
 type Response struct {
@@ -149,13 +152,8 @@ type Container struct {
 	//	Runtime string
 	runtime string
 
-	runtimeDuration     time.Duration
-	compileTimeDuration time.Duration
-
-	output         []string
-	compilerOutput []string
-
-	complete chan string
+	executionResponse *ExecutionResponse
+	complete          chan string
 
 	client  *client.Client
 	request *Request
@@ -244,32 +242,11 @@ func (d *Container) prepare(_ context.Context) error {
 		}
 	}
 
-	// Create the standard output file and standard error output file, these will be directed
-	// towards when the source code file is compiled or the interpreted file is executed.
-	sourceOut := filepath.Join(d.request.Path, d.request.Compiler.OutputFile)
-	compileOut := filepath.Join(d.request.Path, d.request.Compiler.CompilerOutputFile)
-
 	runnerConfig := filepath.Join(d.request.Path, "runner.json")
-
-	outFile, standardErr := os.Create(sourceOut)
-	compileFile, compileErr := os.Create(compileOut)
-
-	if standardErr != nil {
-		return errors.Wrap(standardErr, "failed to create output file")
-	}
-
-	if compileErr != nil {
-		return errors.Wrap(compileErr, "failed to create compile out file")
-	}
-
-	defer outFile.Close()
-	defer compileFile.Close()
 
 	parameters := ExecutionParameters{
 		Language:      d.request.Compiler.Language,
 		RunTimeoutSec: d.request.Timeout,
-		StandardOut:   d.request.Compiler.OutputFile,
-		CompilerOut:   d.request.Compiler.CompilerOutputFile,
 		StandardInput: d.request.Compiler.InputFile,
 		CompileSteps:  d.request.Compiler.compileSteps,
 		Run:           d.request.Compiler.runSteps,
@@ -353,70 +330,22 @@ func (d *Container) cleanup() error {
 	return nil
 }
 
-// getSandboxCompilerOutput returns the compiler output for sandbox.
-func (d *Container) getSandboxCompilerOutput() ([]string, error) {
-	path := filepath.Join(d.request.Path, d.request.Compiler.CompilerOutputFile)
-	file, err := os.Open(path)
+func (d *Container) getSandboxRunnerOutput() (*ExecutionResponse, error) {
+	path := filepath.Join(d.request.Path, "runner-out.json")
+	fileBytes, err := os.ReadFile(path)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open compile output file")
+		return nil, errors.Wrap(err, "failed to open runner-out.json file")
 	}
 
-	defer file.Close()
+	fmt.Println(string(fileBytes))
 
-	scanner := bufio.NewScanner(file)
-	var lines []string
+	var params ExecutionResponse
+	_ = json.Unmarshal(fileBytes, &params)
 
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
+	d.status = params.Status
 
-	return lines, nil
-}
-
-// Loads the response of the sandbox execution, the standard output.
-func (d *Container) getSandboxStandardOutput() ([]string, error) {
-	path := filepath.Join(d.request.Path, d.request.Compiler.OutputFile)
-	file, err := os.Open(path)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to open standard output file")
-	}
-
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
-
-	scanner := bufio.NewScanner(file)
-	var lines []string
-
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if strings.HasPrefix(line, "*-COMPILE::EOF-*") {
-			// let's get the runtime/compile complexity, we can use this to
-			// determine if the execution went passed the time limit.
-			splitLine := strings.Split(line, " ")
-
-			runtime := splitLine[1]
-			compile := splitLine[2]
-			code := splitLine[3]
-
-			runtimeDuration, _ := strconv.Atoi(runtime)
-			compileDuration, _ := strconv.Atoi(compile)
-			statusCode, _ := strconv.Atoi(code)
-
-			d.runtimeDuration = time.Duration(runtimeDuration) * time.Nanosecond
-			d.compileTimeDuration = time.Duration(compileDuration) * time.Nanosecond
-			d.status = ContainerStatus(statusCode)
-
-			return lines, nil
-		}
-
-		lines = append(lines, line)
-	}
-
-	return lines, nil
+	return &params, nil
 }
 
 func (d *Container) AddDockerEventMessage(event *events.Message) {
@@ -476,14 +405,8 @@ func (d *Container) handleContainerRemoved() {
 		_ = d.cleanup()
 	}(d)
 
-	if !d.request.Compiler.Interpreter {
-		compilerOutput, _ := d.getSandboxCompilerOutput()
-		d.compilerOutput = compilerOutput
-
-	}
-
-	output, _ := d.getSandboxStandardOutput()
-	d.output = output
+	output, _ := d.getSandboxRunnerOutput()
+	d.executionResponse = output
 
 }
 
@@ -496,11 +419,11 @@ func (d *Container) GetResponse() *Response {
 	if d.status == Finished && d.request.Test != nil {
 		testStatus = TestPassed
 
-		if len(d.output) != len(d.request.Test.ExpectedStdoutData) {
+		if len(d.executionResponse.Output) != len(d.request.Test.ExpectedStdoutData) {
 			testStatus = TestFailed
 		} else {
 			for i, expectedData := range d.request.Test.ExpectedStdoutData {
-				if d.output[i] != expectedData {
+				if d.executionResponse.Output[i] != expectedData {
 					testStatus = TestFailed
 					break
 				}
@@ -509,11 +432,11 @@ func (d *Container) GetResponse() *Response {
 	}
 
 	return &Response{
-		CompilerOutput: d.compilerOutput,
-		Output:         d.output,
-		Status:         d.status,
+		CompilerOutput: d.executionResponse.CompilerOutput,
+		Output:         d.executionResponse.Output,
+		Status:         d.executionResponse.Status,
 		TestStatus:     testStatus,
-		Runtime:        d.runtimeDuration,
-		CompileTime:    d.compileTimeDuration,
+		Runtime:        time.Duration(d.executionResponse.Runtime) * time.Nanosecond,
+		CompileTime:    time.Duration(d.executionResponse.CompileTime) * time.Nanosecond,
 	}
 }
