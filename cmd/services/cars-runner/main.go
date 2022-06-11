@@ -143,12 +143,13 @@ func main() {
 		}
 	}
 
-	if responseCode == sandbox.Finished {
-		// output file for the actual execution
-		executionTarget, _ := os.Create(fmt.Sprintf("/input/%s", params.StandardOut))
-		defer executionTarget.Close()
+	// output file for the actual execution
+	executionTarget, _ := os.Create(fmt.Sprintf("/input/%s", params.StandardOut))
+	defer executionTarget.Close()
 
-		os.Stdout = executionTarget
+	os.Stdout = executionTarget
+
+	if responseCode == sandbox.Finished {
 
 		runtime, runtimeErr = runProject(ctx, &params)
 

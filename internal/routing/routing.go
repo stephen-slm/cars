@@ -25,7 +25,7 @@ import (
 )
 
 type CompileRequest struct {
-	Language   string `json:"language" validate:"required,oneof=python2 python node rust ruby go haskell"`
+	Language   string `json:"language" validate:"required,oneof=python2 python node rust ruby go haskell c cpp"`
 	SourceCode string `json:"source_code" validate:"required"`
 
 	StdinData          []string `json:"stdin_data" validate:"required"`
@@ -133,11 +133,12 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusBadRequest)
 	}
 
+	compiler := sandbox.Compilers[direct.Language]
 	requestID := uuid.NewString()
 
 	_ = h.FileHandler.WriteFile(&files.File{
 		Id:   requestID,
-		Name: "source",
+		Name: compiler.SourceFile,
 		Data: []byte(direct.SourceCode),
 	})
 

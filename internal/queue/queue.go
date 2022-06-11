@@ -96,11 +96,11 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 		Str("language", compileMsg.Language).
 		Msg("handling new compile request")
 
-	sourceCode, _ := fileHandler.GetFile(compileMsg.ID, "source")
+	compiler := sandbox.Compilers[compileMsg.Language]
+
+	sourceCode, _ := fileHandler.GetFile(compileMsg.ID, compiler.SourceFile)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-
-	compiler := sandbox.Compilers[compileMsg.Language]
 
 	sandboxRequest := sandbox.Request{
 		ID:               compileMsg.ID,

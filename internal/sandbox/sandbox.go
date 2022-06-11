@@ -204,8 +204,7 @@ func (d *Container) prepare(_ context.Context) error {
 		return errors.Wrap(err, "failed to make required directories")
 	}
 
-	sourceFileName := "source"
-	sourceFilePath := filepath.Join(d.request.Path, sourceFileName)
+	sourceFilePath := filepath.Join(d.request.Path, d.request.Compiler.SourceFile)
 
 	// Go through the process of writing down the source file to disk, this will be used
 	// and read again when gathering the results.
@@ -267,7 +266,7 @@ func (d *Container) prepare(_ context.Context) error {
 	defer compileFile.Close()
 
 	parameters := ExecutionParameters{
-		Language:      d.request.Compiler.language,
+		Language:      d.request.Compiler.Language,
 		RunTimeoutSec: d.request.Timeout,
 		StandardOut:   d.request.Compiler.OutputFile,
 		CompilerOut:   d.request.Compiler.CompilerOutputFile,
