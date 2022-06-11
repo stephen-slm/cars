@@ -24,6 +24,10 @@ based on a selected programming language with the ability to provide expected ou
 API allows posting untrusted code with some additional requirements into the queue. The loader(s) will run the
 untrusted code inside a container with https://gvisor.dev/, tracking execution properties and verifying output.
 
+## Documentation
+
+* [API Endpoints (Compiling, Templates)](./docs/ENDPOINTS.md)
+
 ## Supported Queues
 
 * Nsq (https://nsq.io/)
