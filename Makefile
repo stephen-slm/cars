@@ -8,21 +8,17 @@ install-tools: ## Install all tools into bin directory.
 build: ## Builds all services in this repository.
 	go install ./cmd/services/...
 
-.PHONY: build-docker-images
-build-docker-images: ## Builds all the required docker images
-	./build/dockerfiles/update-docker.sh
+.PHONY: update-containers
+build-languages: ## Builds the container languages or language
+	@go run ./cmd/tools/container-builder/main.go
+
+.PHONY: update-containers/verbose
+build-languages/verbose: ## Builds the container languages or language with verbose mode enabled.
+	@go run ./cmd/tools/container-builder/main.go -v
 
 .PHONY: clean
 clean: ## Remove build artifacts.
 	rm -rf $(GOBIN)
-
-.PHONY: update-containers
-update-containers: ##  Update the containers
-	@sh ./update-docker.sh
-
-.PHONY: update-containers/verbose
-update-containers/verbose: ##  Update the containers with verbose output
-	@sh ./update-docker.sh true
 
 .PHONY: generate
 generate: install-tools ## Generate mocks, florence features and other code.
