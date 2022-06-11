@@ -109,6 +109,7 @@ type Request struct {
 type ExecutionParameters struct {
 	Language      string   `json:"language"`
 	StandardOut   string   `json:"standardOut"`
+	CompilerOut   string   `json:"standardCompilerOut"`
 	StandardInput string   `json:"standardInput"`
 	CompileSteps  []string `json:"compileSteps"`
 	Run           string   `json:"runSteps"`
@@ -116,6 +117,9 @@ type ExecutionParameters struct {
 }
 
 type Response struct {
+	// The raw output that was produced by the sandbox compiler running.
+	CompilerOutput []string
+
 	// The raw output that was produced by the sandbox.
 	Output []string
 
@@ -148,7 +152,8 @@ type Container struct {
 	runtimeDuration     time.Duration
 	compileTimeDuration time.Duration
 
-	output []string
+	output         []string
+	compilerOutput []string
 
 	complete chan string
 
@@ -243,22 +248,29 @@ func (d *Container) prepare(_ context.Context) error {
 	// Create the standard output file and standard error output file, these will be directed
 	// towards when the source code file is compiled or the interpreted file is executed.
 	sourceOut := filepath.Join(d.request.Path, d.request.Compiler.OutputFile)
+	compileOut := filepath.Join(d.request.Path, d.request.Compiler.CompilerOutputFile)
+
 	runnerConfig := filepath.Join(d.request.Path, "runner.json")
 
-	OutFile, standardErr := os.Create(sourceOut)
+	outFile, standardErr := os.Create(sourceOut)
+	compileFile, compileErr := os.Create(compileOut)
 
 	if standardErr != nil {
 		return errors.Wrap(standardErr, "failed to create output file")
 	}
 
-	defer func(OutFile *os.File) {
-		_ = OutFile.Close()
-	}(OutFile)
+	if compileErr != nil {
+		return errors.Wrap(compileErr, "failed to create compile out file")
+	}
+
+	defer outFile.Close()
+	defer compileFile.Close()
 
 	parameters := ExecutionParameters{
 		Language:      d.request.Compiler.language,
 		RunTimeoutSec: d.request.Timeout,
 		StandardOut:   d.request.Compiler.OutputFile,
+		CompilerOut:   d.request.Compiler.CompilerOutputFile,
 		StandardInput: d.request.Compiler.InputFile,
 		CompileSteps:  d.request.Compiler.compileSteps,
 		Run:           d.request.Compiler.runSteps,
@@ -270,9 +282,7 @@ func (d *Container) prepare(_ context.Context) error {
 		return errors.Wrap(runnerError, "failed to create runner configuration")
 	}
 
-	defer func(runnerFile *os.File) {
-		_ = runnerFile.Close()
-	}(runnerFile)
+	defer runnerFile.Close()
 
 	runnerJSONBytes, _ := json.Marshal(parameters)
 	if _, writeErr := runnerFile.Write(runnerJSONBytes); writeErr != nil {
@@ -342,6 +352,27 @@ func (d *Container) cleanup() error {
 	}
 
 	return nil
+}
+
+// getSandboxCompilerOutput returns the compiler output for sandbox.
+func (d *Container) getSandboxCompilerOutput() ([]string, error) {
+	path := filepath.Join(d.request.Path, d.request.Compiler.CompilerOutputFile)
+	file, err := os.Open(path)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open compile output file")
+	}
+
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var lines []string
+
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	return lines, nil
 }
 
 // Loads the response of the sandbox execution, the standard output.
@@ -446,8 +477,15 @@ func (d *Container) handleContainerRemoved() {
 		_ = d.cleanup()
 	}(d)
 
+	if !d.request.Compiler.Interpreter {
+		compilerOutput, _ := d.getSandboxCompilerOutput()
+		d.compilerOutput = compilerOutput
+
+	}
+
 	output, _ := d.getSandboxStandardOutput()
 	d.output = output
+
 }
 
 // GetResponse - Get the response of the sandbox, can only be called once in removed state.
@@ -472,10 +510,11 @@ func (d *Container) GetResponse() *Response {
 	}
 
 	return &Response{
-		Output:      d.output,
-		Status:      d.status,
-		TestStatus:  testStatus,
-		Runtime:     d.runtimeDuration,
-		CompileTime: d.compileTimeDuration,
+		CompilerOutput: d.compilerOutput,
+		Output:         d.output,
+		Status:         d.status,
+		TestStatus:     testStatus,
+		Runtime:        d.runtimeDuration,
+		CompileTime:    d.compileTimeDuration,
 	}
 }

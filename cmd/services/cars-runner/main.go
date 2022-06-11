@@ -118,12 +118,6 @@ func main() {
 	var params sandbox.ExecutionParameters
 	_ = json.Unmarshal(fileBytes, &params)
 
-	// configure the output to write into the out file.
-	target, _ := os.Create(fmt.Sprintf("/input/%s", params.StandardOut))
-	defer target.Close()
-
-	os.Stdout = target
-
 	responseCode := sandbox.Finished
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -131,6 +125,13 @@ func main() {
 
 	var runtime, compileTime int64
 	var compileErr, runtimeErr error
+
+	// configure the file for th compiled output, this is the text
+	// outputted when the compiler is running.
+	compileTarget, _ := os.Create(fmt.Sprintf("/input/%s", params.CompilerOut))
+	defer compileTarget.Close()
+
+	os.Stdout = compileTarget
 
 	compileTime, compileErr = compileProject(ctx, &params)
 
@@ -143,6 +144,12 @@ func main() {
 	}
 
 	if responseCode == sandbox.Finished {
+		// output file for the actual execution
+		executionTarget, _ := os.Create(fmt.Sprintf("/input/%s", params.StandardOut))
+		defer executionTarget.Close()
+
+		os.Stdout = executionTarget
+
 		runtime, runtimeErr = runProject(ctx, &params)
 
 		if runtimeErr != nil {

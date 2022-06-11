@@ -12,40 +12,44 @@ type LanguageCompiler struct {
 	compileSteps []string
 	// If the given compilerName is an interpreter or not, since based on this action we would need to
 	// create additional steps for compiling to a file if not.
-	interpreter bool
+	Interpreter bool
 	// This is the name of docker image that will be executed for the given code sample, this will
 	// be the container that will be used for just this language. Most likely virtual_machine_language,
 	// e.g. virtual_machine_python.
 	VirtualMachineName string
 	//  The file in which the given compilerName will be writing too (standard output and error out),
 	//  since this file will be read when the response returned to the user.
-	OutputFile string
-	InputFile  string
+	OutputFile         string
+	CompilerOutputFile string
+	InputFile          string
 }
 
 var Compilers = map[string]LanguageCompiler{
 	"python": {
 		language:           "python",
 		runSteps:           "pypy /input/source",
-		interpreter:        true,
+		Interpreter:        true,
 		VirtualMachineName: "virtual_machine_python",
 		OutputFile:         "output",
+		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"node": {
 		language:           "NodeJs",
 		runSteps:           "node /input/source",
-		interpreter:        true,
+		Interpreter:        true,
 		VirtualMachineName: "virtual_machine_node",
 		OutputFile:         "output",
+		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"ruby": {
 		language:           "Ruby",
 		runSteps:           "ruby /input/source",
-		interpreter:        true,
+		Interpreter:        true,
 		VirtualMachineName: "virtual_machine_ruby",
 		OutputFile:         "output",
+		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"rust": {
@@ -54,9 +58,10 @@ var Compilers = map[string]LanguageCompiler{
 		compileSteps: []string{
 			"rustc -o /out /input/source",
 		},
-		interpreter:        false,
+		Interpreter:        false,
 		VirtualMachineName: "virtual_machine_rust",
 		OutputFile:         "output",
+		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"go": {
@@ -66,9 +71,10 @@ var Compilers = map[string]LanguageCompiler{
 			"cp /input/source /project/main.go",
 			"go build -o /out /project/main.go",
 		},
-		interpreter:        false,
+		Interpreter:        false,
 		VirtualMachineName: "virtual_machine_go",
 		OutputFile:         "output",
+		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"haskell": {
@@ -77,9 +83,10 @@ var Compilers = map[string]LanguageCompiler{
 		compileSteps: []string{
 			"ghc -x hs -o /out /input/source",
 		},
-		interpreter:        false,
+		Interpreter:        false,
 		VirtualMachineName: "virtual_machine_haskell",
 		OutputFile:         "output",
+		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 }
