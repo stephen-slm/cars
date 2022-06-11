@@ -100,13 +100,15 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
+	compiler := sandbox.Compilers[compileMsg.Language]
+
 	sandboxRequest := sandbox.Request{
 		ID:               compileMsg.ID,
 		Timeout:          1,
 		MemoryConstraint: 1024,
 		Path:             filepath.Join(os.TempDir(), "executions", uuid.NewString()),
 		SourceCode:       string(sourceCode),
-		Compiler:         sandbox.Compilers[compileMsg.Language],
+		Compiler:         compiler,
 		Test:             nil,
 	}
 
@@ -132,8 +134,22 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 
 	resp := manager.GetResponse(ctx, containerID)
 
-	_ = fileHandler.WriteFile(sandboxRequest.ID, "output",
-		[]byte(strings.Join(resp.Output, "\r\n")))
+	uploadFiles := []*files.File{{
+		Id:   sandboxRequest.ID,
+		Name: compiler.OutputFile,
+		Data: []byte(strings.Join(resp.Output, "\r\n")),
+	}}
+
+	if !sandboxRequest.Compiler.Interpreter {
+		uploadFiles = append(uploadFiles, &files.File{
+			Id:   sandboxRequest.ID,
+			Name: compiler.CompilerOutputFile,
+			Data: []byte(strings.Join(resp.CompilerOutput, "\r\n")),
+		})
+
+	}
+
+	_ = fileHandler.WriteFiles(uploadFiles...)
 
 	_ = manager.RemoveContainer(context.Background(), containerID, false)
 

@@ -36,10 +36,12 @@ type CompileInfoResponse struct {
 	Status     string `json:"status"`
 	TestStatus string `json:"test_status"`
 
-	CompileMs int64 `json:"compile_ms"`
-	RuntimeMs int64 `json:"runtime_ms"`
+	CompileMs int64  `json:"compile_ms"`
+	RuntimeMs int64  `json:"runtime_ms"`
+	Language  string `json:"language"`
 
-	Output string `json:"output"`
+	Output         string `json:"output"`
+	CompilerOutput string `json:"compiler_output,omitempty"`
 }
 
 type QueueCompileResponse struct {
@@ -132,7 +134,12 @@ func (h CompilerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	requestID := uuid.NewString()
-	_ = h.FileHandler.WriteFile(requestID, "source", []byte(direct.SourceCode))
+
+	_ = h.FileHandler.WriteFile(&files.File{
+		Id:   requestID,
+		Name: "source",
+		Data: []byte(direct.SourceCode),
+	})
 
 	bytes, _ := json.Marshal(queue.CompileMessage{
 		ID:                 requestID,
@@ -218,13 +225,21 @@ func (h CompilerInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Status:     execution.Status,
 		TestStatus: execution.TestStatus,
 		CompileMs:  execution.CompileMs,
+		Language:   execution.Language,
 		RuntimeMs:  execution.RuntimeMs,
 		Output:     "",
 	}
 
-	if data, outputErr := h.FileHandler.GetFile(parsedIDValue.String(), "output"); outputErr == nil {
+	compiler := sandbox.Compilers[execution.Language]
+
+	if data, outputErr := h.FileHandler.GetFile(parsedIDValue.String(), compiler.OutputFile); outputErr == nil {
 		log.Info().Str("data", string(data)).Msg("data")
 		resp.Output = string(data)
+	}
+
+	if data, outputErr := h.FileHandler.GetFile(parsedIDValue.String(), compiler.CompilerOutputFile); outputErr == nil {
+		log.Info().Str("data", string(data)).Msg("data")
+		resp.CompilerOutput = string(data)
 	}
 
 	handleJSONResponse(w, resp, http.StatusOK)
