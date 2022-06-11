@@ -13,4 +13,4 @@ RUN go build -o /runner ./cmd/services/cars-runner/main.go
 FROM ruby:3.1.2-alpine
 
 COPY --from=BUILDER /runner /runner
-RUN apk --update add sudo bc coreutils
+RUN apk --update add coreutils
