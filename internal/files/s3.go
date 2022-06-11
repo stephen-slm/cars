@@ -3,6 +3,7 @@ package files
 import (
 	"bytes"
 	"path/filepath"
+	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -31,18 +32,46 @@ func newS3Files(s3Config *S3Config) (S3Files, error) {
 	return s3Files, nil
 }
 
-func (s S3Files) WriteFile(id string, name string, data []byte) error {
+func (s S3Files) WriteFile(file *File) error {
 	_, writeFileErr := s.s3.PutObject(&s3.PutObjectInput{
-		Body:   bytes.NewReader(data),
+		Body:   bytes.NewReader(file.Data),
 		Bucket: aws.String(s.config.BucketName),
-		Key:    aws.String(filepath.Join(id, name)),
+		Key:    aws.String(filepath.Join(file.Id, file.Name)),
 	})
 
 	if writeFileErr != nil {
-		return errors.Wrapf(writeFileErr, "failed to create %s file", name)
+		return errors.Wrapf(writeFileErr, "failed to create %s file", file.Name)
 	}
 
 	return nil
+}
+
+func (s S3Files) WriteFiles(files ...*File) []error {
+	wg := sync.WaitGroup{}
+
+	var errs []error
+	queue := make(chan error, len(files))
+
+	for _, file := range files {
+		wg.Add(1)
+
+		go func(file *File) {
+			defer wg.Done()
+
+			if err := s.WriteFile(file); err != nil {
+				queue <- err
+			}
+		}(file)
+	}
+
+	wg.Wait()
+	close(queue)
+
+	for err := range queue {
+		errs = append(errs, err)
+	}
+
+	return errs
 }
 
 func (s S3Files) GetFile(id string, name string) ([]byte, error) {

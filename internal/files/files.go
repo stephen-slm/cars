@@ -27,7 +27,9 @@ type Config struct {
 }
 
 type Files interface {
-	WriteFile(id string, name string, data []byte) error
+	WriteFiles(files ...*File) []error
+	WriteFile(file *File) error
+
 	GetFile(id string, name string) ([]byte, error)
 }
 
