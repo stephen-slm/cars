@@ -1,5 +1,12 @@
 package sandbox
 
+import (
+	"embed"
+	"fmt"
+
+	"github.com/rs/zerolog/log"
+)
+
 type LanguageCompiler struct {
 	// The language that the given compilerName is going to be using or not. This can be seen as the kind
 	// of code that is going to be executed by the requesting machine. e.g Python, Node, JavaScript,
@@ -139,4 +146,24 @@ var Compilers = map[string]LanguageCompiler{
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
+}
+
+//go:embed templates/*
+var content embed.FS
+
+// CompilerTemplate - this will be filled with the template data for API calls.
+// the data should be small so templates will be in memory always.
+var CompilerTemplate = map[string]string{}
+
+func LoadEmbededFiles() {
+	for s := range Compilers {
+		data, err := content.ReadFile(fmt.Sprintf("templates/%s.txt", s))
+
+		if err != nil {
+			log.Warn().Str("lang", s).Msg("language does not have a template")
+			continue
+		}
+
+		CompilerTemplate[s] = string(data)
+	}
 }

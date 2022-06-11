@@ -5,8 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rs/zerolog"
+
 	"compile-and-run-sandbox/internal/files"
 	"compile-and-run-sandbox/internal/parser"
+	"compile-and-run-sandbox/internal/sandbox"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
@@ -32,8 +35,11 @@ func getTranslator() ut.Translator {
 }
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	log.Info().Msg("starting cars-api")
 	args := parser.ParseDefaultConfigurationArguments()
+
+	sandbox.LoadEmbededFiles()
 
 	queueRunner, err := queue.NewQueue(&queue.Config{
 		ForceLocalMode: true,
@@ -65,7 +71,7 @@ func main() {
 		log.Fatal().Err(respErr).Msg("failed to create database connection")
 	}
 
-	localFileHandler, err := files.NewFilesHandler(&files.Config{
+	fileHandler, err := files.NewFilesHandler(&files.Config{
 		Local:          &files.LocalConfig{LocalRootPath: filepath.Join(os.TempDir(), "executions")},
 		S3:             &files.S3Config{BucketName: args.S3BucketName},
 		ForceLocalMode: true,
@@ -89,21 +95,17 @@ func main() {
 	// error messages in the future.
 	_ = enTranslations.RegisterDefaultTranslations(validate, translator)
 
-	r.Handle("/", handlers.
-		LoggingHandler(os.Stdout, routing.CompilerHandler{
-			FileHandler: localFileHandler,
-			Repo:        repo,
-			Queue:       queueRunner,
-			Translator:  translator,
-			Validator:   validate,
-		})).
-		Methods("POST")
+	compileHandlers := routing.CompilerHandlers{
+		FileHandler: fileHandler,
+		Repo:        repo,
+		Translator:  translator,
+		Validator:   validate,
+		Queue:       queueRunner,
+	}
 
-	r.Handle("/{id}", handlers.
-		LoggingHandler(os.Stdout, routing.CompilerInfoHandler{
-			FileHandler: localFileHandler,
-			Repo:        repo,
-		})).Methods("GET")
+	r.HandleFunc("/compile", compileHandlers.HandleCompileRequest).Methods("POST")
+	r.HandleFunc("/compile/{id}", compileHandlers.HandleGetCompileResponse).Methods("GET")
+	r.HandleFunc("/templates/{lang}", routing.HandleGetLanguageTemplate).Methods("GET")
 
 	log.Info().Msg("listening on :8080")
 

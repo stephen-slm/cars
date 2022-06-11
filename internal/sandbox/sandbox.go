@@ -338,8 +338,6 @@ func (d *Container) getSandboxRunnerOutput() (*ExecutionResponse, error) {
 		return nil, errors.Wrap(err, "failed to open runner-out.json file")
 	}
 
-	fmt.Println(string(fileBytes))
-
 	var params ExecutionResponse
 	_ = json.Unmarshal(fileBytes, &params)
 
