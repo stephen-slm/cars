@@ -25,6 +25,15 @@ type LanguageCompiler struct {
 }
 
 var Compilers = map[string]LanguageCompiler{
+	"python2": {
+		language:           "python2",
+		runSteps:           "pypy /input/source",
+		Interpreter:        true,
+		VirtualMachineName: "virtual_machine_python2",
+		OutputFile:         "output",
+		CompilerOutputFile: "compile",
+		InputFile:          "input",
+	},
 	"python": {
 		language:           "python",
 		runSteps:           "pypy /input/source",
