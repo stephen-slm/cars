@@ -113,7 +113,7 @@ type ExecutionParameters struct {
 	RunTimeoutSec int      `json:"runTimeoutSec"`
 }
 
-func (e2 ExecutionParameters) MarshalZerologObject(e *zerolog.Event) {
+func (e2 *ExecutionParameters) MarshalZerologObject(e *zerolog.Event) {
 	e.Str("id", e2.ID).
 		Str("language", e2.Language).
 		Bool("compiled", len(e2.CompileSteps) > 0)
