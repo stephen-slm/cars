@@ -1,8 +1,8 @@
 using System;
 
-namespace MyApp
+namespace Solution
 {
-    internal class Program
+    internal class Solution
     {
         static void Main(string[] args)
         {
