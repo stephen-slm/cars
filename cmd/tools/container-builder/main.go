@@ -13,11 +13,9 @@ import (
 	"compile-and-run-sandbox/internal/sandbox"
 )
 
-var (
-	RED      = "\\033[31m"
-	GREEN    = "\\033[32m"
-	ENDCOLOR = "\\033[0m"
-)
+var ENDCOLOR = "\033[0m"
+var RED = "\033[31m"
+var GREEN = "\033[32m"
 
 func main() {
 	if runtime.GOOS == "windows" {
@@ -31,16 +29,16 @@ func main() {
 		verbose    bool
 	)
 
-	flag.StringVar(&filterName, "lang", "", "")
+	flag.StringVar(&filterName, "clang", "", "")
 	flag.BoolVar(&verbose, "v", false, "")
 
 	flag.Parse()
 
-	if filterName != "" {
+	if strings.TrimSpace(filterName) != "" {
 		c, ok := sandbox.Compilers[filterName]
 
 		if !ok {
-			log.Fatalln("language does not exist in supported compilers")
+			log.Fatalf("language '%s' does not exist in supported compilers\n", filterName)
 		}
 
 		if c.Compiler != "" {
