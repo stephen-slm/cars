@@ -176,6 +176,10 @@ var Compilers = map[string]*LanguageCompiler{
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
+	// Java is very picky when it comes to the names of files and the names of the solution
+	// class within the file. This means this cannot change. The java file will contain a
+	// solution class which is required for execution. If they change the Solution class
+	// name the project will fail to compile.
 	"java": {
 		Compiler: "openjdk",
 		Language: "Java",
