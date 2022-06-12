@@ -8,9 +8,10 @@ Below includes the documentation of the existing API endpoints which are exposed
 		+ [expected stdout data](#expected-stdout-data)
 	* [Compile Response](#compile-response)
 		+ [Response](#response-1)
-		+ [Possible Status Values:](#possible-status-values-)
-		+ [Possible Test Status Values:](#possible-test-status-values-)
-- [Templates](#templates)
+		+ [Possible Status Values](#possible-status-values)
+		+ [Possible Test Status Values](#possible-test-status-values)
+- [Languages And Templates](#languages-and-templates)
+	* [Supported Languages](#supported-languages)
 	* [Language Template](#language-template)
 
 # Compile
@@ -81,7 +82,7 @@ Example: `GET - /compile/56ea6176-d23f-4561-b937-b16c6a8434ef`
 }
 ```
 
-### Possible Status Values:
+### Possible Status Values
 
 * NotRan
 * Created
@@ -96,14 +97,14 @@ Example: `GET - /compile/56ea6176-d23f-4561-b937-b16c6a8434ef`
 * RunTimeError
 * NonDeterministicError
 
-### Possible Test Status Values:
+### Possible Test Status Values
 
 * NoTest
 * TestNotRan
 * TestFailed
 * TestPassed
 
-# Languages & Templates
+# Languages And Templates
 
 API endpoints to support the gathering and working with language templates and general language information.
 

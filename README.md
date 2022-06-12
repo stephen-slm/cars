@@ -26,7 +26,7 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 
 ## Documentation
 
-* [API Endpoints (Compiling, Templates)](./docs/ENDPOINTS.md)
+* [API Endpoints (Compiling, Templates, Languages)](./docs/ENDPOINTS.md)
 
 ## Supported Queues
 
