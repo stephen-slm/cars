@@ -8,11 +8,11 @@ install-tools: ## Install all tools into bin directory.
 build: ## Builds all services in this repository.
 	go install ./cmd/services/...
 
-.PHONY: update-containers
+.PHONY: build-languages
 build-languages: ## Builds the container languages or language
 	@go run ./cmd/tools/container-builder/main.go
 
-.PHONY: update-containers/verbose
+.PHONY: build-languages/verbose
 build-languages/verbose: ## Builds the container languages or language with verbose mode enabled.
 	@go run ./cmd/tools/container-builder/main.go -v
 
