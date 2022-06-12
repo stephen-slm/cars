@@ -194,6 +194,20 @@ var Compilers = map[string]*LanguageCompiler{
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
+	"scala": {
+		Compiler: "openjdk",
+		Language: "Scala",
+		runSteps: "bash -c \"scala -cp . Solution\"",
+		compileSteps: []string{
+			"bash -c \"scalac /input/Solution.scala\"",
+		},
+		Interpreter:        false,
+		VirtualMachineName: "virtual_machine_openjdk",
+		SourceFile:         "Solution.scala",
+		OutputFile:         "output",
+		CompilerOutputFile: "compile",
+		InputFile:          "input",
+	},
 }
 
 //go:embed templates/*
