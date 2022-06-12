@@ -12,7 +12,7 @@ import (
 )
 
 type CompileRequest struct {
-	Language   string `json:"language" validate:"required,oneof=python2 python node rust ruby go haskell c cpp fsharp csharp"`
+	Language   string `json:"language" validate:"required,oneof=python2 python node rust ruby go haskell c cpp fsharp csharp java"`
 	SourceCode string `json:"source_code" validate:"required"`
 
 	StdinData          []string `json:"stdin_data" validate:"required"`
