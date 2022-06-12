@@ -13,7 +13,7 @@ type LocalFiles struct {
 }
 
 type File struct {
-	Id   string
+	ID   string
 	Name string
 	Data []byte
 }
@@ -26,7 +26,7 @@ func newLocalFiles(config *LocalConfig) (LocalFiles, error) {
 }
 
 func (l LocalFiles) WriteFile(file *File) error {
-	folderDirectory := filepath.Join(l.config.LocalRootPath, file.Id)
+	folderDirectory := filepath.Join(l.config.LocalRootPath, file.ID)
 	filePath := filepath.Join(folderDirectory, file.Name)
 
 	if err := os.MkdirAll(folderDirectory, 0o750); err != nil {
@@ -51,7 +51,7 @@ func (l LocalFiles) WriteFile(file *File) error {
 func (l LocalFiles) WriteFiles(files ...*File) []error {
 	wg := sync.WaitGroup{}
 
-	var errs []error
+	errs := make([]error, 0)
 	queue := make(chan error, len(files))
 
 	for _, file := range files {

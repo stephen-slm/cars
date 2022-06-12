@@ -34,7 +34,7 @@ type LanguageCompiler struct {
 	InputFile          string
 }
 
-var Compilers = map[string]LanguageCompiler{
+var Compilers = map[string]*LanguageCompiler{
 	"python2": {
 		Language:           "python2",
 		runSteps:           "pypy /input/source.py",

@@ -95,7 +95,7 @@ type Request struct {
 	// The reference details of the compilerName that will be running the code.
 	// Including details of the language, compilerName name (or interrupter)
 	// and the name of the given output file.
-	Compiler LanguageCompiler
+	Compiler *LanguageCompiler
 	// The related test that will be executed with the sandbox, comparing a
 	// given input with a given output. This is an optional part since the
 	// process could just be completing the code and not actually testing

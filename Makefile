@@ -1,6 +1,10 @@
 # Install all development tools and build artifacts to the project's `bin` directory.
 export GOBIN=$(CURDIR)/bin
 
+install-hooks: ## Install git hooks
+	@sh ./scripts/install-hooks.sh
+
+
 install-tools: ## Install all tools into bin directory.
 	@cat build/tools.go | grep "_" | awk '{print $$2}' | xargs go install
 

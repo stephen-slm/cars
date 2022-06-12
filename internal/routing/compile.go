@@ -54,7 +54,7 @@ func (h CompilerHandlers) HandleCompileRequest(w http.ResponseWriter, r *http.Re
 	requestID := uuid.NewString()
 
 	_ = h.FileHandler.WriteFile(&files.File{
-		Id:   requestID,
+		ID:   requestID,
 		Name: compiler.SourceFile,
 		Data: []byte(direct.SourceCode),
 	})

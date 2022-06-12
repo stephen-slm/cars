@@ -36,7 +36,7 @@ func (s S3Files) WriteFile(file *File) error {
 	_, writeFileErr := s.s3.PutObject(&s3.PutObjectInput{
 		Body:   bytes.NewReader(file.Data),
 		Bucket: aws.String(s.config.BucketName),
-		Key:    aws.String(filepath.Join(file.Id, file.Name)),
+		Key:    aws.String(filepath.Join(file.ID, file.Name)),
 	})
 
 	if writeFileErr != nil {
@@ -49,7 +49,7 @@ func (s S3Files) WriteFile(file *File) error {
 func (s S3Files) WriteFiles(files ...*File) []error {
 	wg := sync.WaitGroup{}
 
-	var errs []error
+	errs := make([]error, 0)
 	queue := make(chan error, len(files))
 
 	for _, file := range files {

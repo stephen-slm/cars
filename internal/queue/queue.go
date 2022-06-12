@@ -105,7 +105,7 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 		ID:               compileMsg.ID,
 		Timeout:          1,
 		MemoryConstraint: 1024,
-		Path:             filepath.Join(os.TempDir(), "executions/raw", compileMsg.ID),
+		Path:             filepath.Join(os.TempDir(), "executions", "raw", compileMsg.ID),
 		SourceCode:       string(sourceCode),
 		Compiler:         compiler,
 		Test:             nil,
@@ -134,14 +134,14 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 	resp := manager.GetResponse(ctx, containerID)
 
 	uploadFiles := []*files.File{{
-		Id:   sandboxRequest.ID,
+		ID:   sandboxRequest.ID,
 		Name: compiler.OutputFile,
 		Data: []byte(strings.Join(resp.Output, "\n")),
 	}}
 
 	if !sandboxRequest.Compiler.Interpreter {
 		uploadFiles = append(uploadFiles, &files.File{
-			Id:   sandboxRequest.ID,
+			ID:   sandboxRequest.ID,
 			Name: compiler.CompilerOutputFile,
 			Data: []byte(strings.Join(resp.CompilerOutput, "\n")),
 		})

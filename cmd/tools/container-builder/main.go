@@ -80,9 +80,7 @@ func runDockerCommand(lang string, name string, verbose bool) {
 
 	cmd.Args = append(cmd.Args, ".")
 
-	err := cmd.Run()
-
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
 	}
 
