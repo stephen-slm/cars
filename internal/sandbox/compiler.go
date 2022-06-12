@@ -36,7 +36,7 @@ type LanguageCompiler struct {
 
 var Compilers = map[string]*LanguageCompiler{
 	"python2": {
-		Language:           "python2",
+		Language:           "Python 2 (pypy)",
 		runSteps:           "pypy /input/source.py",
 		Interpreter:        true,
 		VirtualMachineName: "virtual_machine_python2",
@@ -46,7 +46,7 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"python": {
-		Language:           "python",
+		Language:           "Python (pypy)",
 		runSteps:           "pypy /input/source.py",
 		Interpreter:        true,
 		VirtualMachineName: "virtual_machine_python",
@@ -56,7 +56,7 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"node": {
-		Language:           "NodeJs",
+		Language:           "NodeJs (Javascript)",
 		runSteps:           "node /input/source.js",
 		Interpreter:        true,
 		VirtualMachineName: "virtual_machine_node",
@@ -91,7 +91,7 @@ var Compilers = map[string]*LanguageCompiler{
 	},
 	"go": {
 		Compiler: "go",
-		Language: "Go",
+		Language: "Golang",
 		runSteps: "/out",
 		compileSteps: []string{
 			"cp /input/source.go /project/main.go",

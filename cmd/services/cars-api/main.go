@@ -106,7 +106,9 @@ func main() {
 
 	r.HandleFunc("/compile", compileHandlers.HandleCompileRequest).Methods("POST")
 	r.HandleFunc("/compile/{id}", compileHandlers.HandleGetCompileResponse).Methods("GET")
-	r.HandleFunc("/templates/{lang}", routing.HandleGetLanguageTemplate).Methods("GET")
+
+	r.HandleFunc("/languages", routing.HandleListLanguagesSupported).Methods("GET")
+	r.HandleFunc("/languages/{lang}/template", routing.HandleGetLanguageTemplate).Methods("GET")
 
 	log.Info().Msg("listening on :8080")
 

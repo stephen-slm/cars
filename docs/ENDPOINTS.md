@@ -1,18 +1,17 @@
 Below includes the documentation of the existing API endpoints which are exposed from the project.
 
 - [Compile](#compile)
-    * [Compile Request](#compile-request)
-        + [Request](#request)
-        + [Response](#response)
-        + [stdin data](#stdin-data)
-        + [expected stdout data](#expected-stdout-data)
-    * [Compile Response](#compile-response)
-        + [Response](#response-1)
-        + [Possible Status Values:](#possible-status-values-)
-        + [Possible Test Status Values:](#possible-test-status-values-)
+	* [Compile Request](#compile-request)
+		+ [Request](#request)
+		+ [Response](#response)
+		+ [stdin data](#stdin-data)
+		+ [expected stdout data](#expected-stdout-data)
+	* [Compile Response](#compile-response)
+		+ [Response](#response-1)
+		+ [Possible Status Values:](#possible-status-values-)
+		+ [Possible Test Status Values:](#possible-test-status-values-)
 - [Templates](#templates)
-    * [Language Template](#language-template)
-
+	* [Language Template](#language-template)
 
 # Compile
 
@@ -104,9 +103,42 @@ Example: `GET - /compile/56ea6176-d23f-4561-b937-b16c6a8434ef`
 * TestFailed
 * TestPassed
 
-# Templates
+# Languages & Templates
 
-API endpoints to support the gathering and working with language templates.
+API endpoints to support the gathering and working with language templates and general language information.
+
+## Supported Languages
+
+This endpoint will return a list of languages that can be exposed to the user. This response contains a display name
+for the language that will contain compiler information if important and will also return the code. The code is
+the value sent to the server when requesting to compile and run.
+
+URL: `GET - /languages`
+
+```json
+[
+  {
+	"language_code": "csharp",
+	"display_name": "C# (dotnet6)"
+  },
+  {
+	"language_code": "node",
+	"display_name": "NodeJs (Javascript)"
+  },
+  {
+	"language_code": "python",
+	"display_name": "Python (pypy)"
+  },
+  {
+	"language_code": "rust",
+	"display_name": "Rust (rustc)"
+  },
+  {
+	"language_code": "go",
+	"display_name": "Golang"
+  }
+]
+```
 
 ## Language Template
 
@@ -114,10 +146,10 @@ This endpoint is designed to allow consumers of the platform to serve the user w
 is more important for languages that require selective formatting or a `main` function. An example of these languages
 would be Haskell, C++, and C.
 
-URL: `GET - /templates/{language}`  
+URL: `GET - /languages/{language}/template`  
 Response: A usable template for that language that will run when attempting to compile
 
-Example: `GET - /templates/cpp`
+Example: `GET - /languages/cpp/template`
 
 ```cpp
 #include <iostream>
