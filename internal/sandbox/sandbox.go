@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/docker/docker/api/types"
@@ -104,11 +105,18 @@ type Request struct {
 }
 
 type ExecutionParameters struct {
+	ID            string   `json:"id"`
 	Language      string   `json:"language"`
 	StandardInput string   `json:"standardInput"`
 	CompileSteps  []string `json:"compileSteps"`
 	Run           string   `json:"runSteps"`
 	RunTimeoutSec int      `json:"runTimeoutSec"`
+}
+
+func (e2 ExecutionParameters) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("id", e2.ID).
+		Str("language", e2.Language).
+		Bool("compiled", len(e2.CompileSteps) > 0)
 }
 
 type ExecutionResponse struct {
@@ -245,6 +253,7 @@ func (d *Container) prepare(_ context.Context) error {
 	runnerConfig := filepath.Join(d.request.Path, "runner.json")
 
 	parameters := ExecutionParameters{
+		ID:            d.request.ID,
 		Language:      d.request.Compiler.Language,
 		RunTimeoutSec: d.request.Timeout,
 		StandardInput: d.request.Compiler.InputFile,

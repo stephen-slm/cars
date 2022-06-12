@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"compile-and-run-sandbox/internal/sandbox"
 )
@@ -108,13 +109,13 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (runOu
 
 func main() {
 	if _, err := os.Stat("/input/runner.json"); errors.Is(err, os.ErrNotExist) {
-		log.Fatalln("runner.json configuration file does not exist and container cannot be executed.")
+		log.Fatal().Err(err).Msg("runner.json configuration file does not exist and container cannot be executed.")
 	}
 
 	fileBytes, runnerFileErr := os.ReadFile("/input/runner.json")
 
 	if runnerFileErr != nil {
-		log.Fatalln("runner.json failed to be read", runnerFileErr)
+		log.Fatal().Err(runnerFileErr).Msg("runner.json failed to be read")
 	}
 
 	var params sandbox.ExecutionParameters
@@ -134,6 +135,9 @@ func main() {
 	compilerOutput, compileTime, compileErr = compileProject(ctx, &params)
 
 	if compileErr != nil {
+		log.Error().Err(compileErr).Object("request", &params).
+			Msg("error occurred when executing compile")
+
 		if errors.Is(compileErr, context.DeadlineExceeded) {
 			responseCode = sandbox.TimeLimitExceeded
 		} else {
@@ -147,6 +151,10 @@ func main() {
 		runOutput, runtime, runtimeErr = runProject(ctx, &params)
 
 		if runtimeErr != nil {
+			log.Error().Err(runtimeErr).
+				Object("request", &params).
+				Msg("error occurred when running code")
+
 			if errors.Is(runtimeErr, context.DeadlineExceeded) {
 				responseCode = sandbox.TimeLimitExceeded
 			} else {
