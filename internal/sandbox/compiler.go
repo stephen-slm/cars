@@ -146,6 +146,21 @@ var Compilers = map[string]*LanguageCompiler{
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
+	"fsharp": {
+		Compiler: "dotnet6",
+		Language: "F#",
+		runSteps: "/projectf/build-output/project",
+		compileSteps: []string{
+			"cp /input/source.fs /projectf/Program.fs",
+			"cd /projectf/ && dotnet build --configuration Release -o ./build-output",
+		},
+		Interpreter:        false,
+		VirtualMachineName: "virtual_machine_dotnet6",
+		SourceFile:         "source.fs",
+		OutputFile:         "output",
+		CompilerOutputFile: "compile",
+		InputFile:          "input",
+	},
 }
 
 //go:embed templates/*
