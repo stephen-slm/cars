@@ -197,9 +197,9 @@ var Compilers = map[string]*LanguageCompiler{
 	"scala": {
 		Compiler: "openjdk",
 		Language: "Scala",
-		runSteps: "bash -c \"scala -cp . Solution\"",
+		runSteps: "/scala -cp . Solution",
 		compileSteps: []string{
-			"bash -c \"scalac /input/Solution.scala\"",
+			"/scalac /input/Solution.scala",
 		},
 		Interpreter:        false,
 		VirtualMachineName: "virtual_machine_openjdk",
