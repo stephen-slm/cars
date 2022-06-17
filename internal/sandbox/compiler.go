@@ -194,6 +194,34 @@ var Compilers = map[string]*LanguageCompiler{
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
+	"scala": {
+		Compiler: "openjdk",
+		Language: "Scala",
+		runSteps: "/scala -cp . Solution",
+		compileSteps: []string{
+			"/scalac /input/Solution.scala",
+		},
+		Interpreter:        false,
+		VirtualMachineName: "virtual_machine_openjdk",
+		SourceFile:         "Solution.scala",
+		OutputFile:         "output",
+		CompilerOutputFile: "compile",
+		InputFile:          "input",
+	},
+	"kotlin": {
+		Compiler: "openjdk",
+		Language: "Kotlin",
+		runSteps: "java -jar /solution.jar",
+		compileSteps: []string{
+			"/kotlinc solution.kt -include-runtime -d /solution.jar",
+		},
+		Interpreter:        false,
+		VirtualMachineName: "virtual_machine_openjdk",
+		SourceFile:         "solution.kt",
+		OutputFile:         "output",
+		CompilerOutputFile: "compile",
+		InputFile:          "input",
+	},
 }
 
 //go:embed templates/*

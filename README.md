@@ -42,18 +42,20 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 
 | Language | Version      | Url                          |
 |----------|--------------|------------------------------|
-| Python2  | v2.7         | https://pypy.org             |
-| Python3  | v3.9         | https://pypy.org             |
-| NodeJs   | v16          | https://nodejs.org           |
-| Rust     | v1.61        | https://rust-lang.org        |
-| Ruby     | v3.1         | https://ruby-lang.org        |
-| Go       | v1.18        | https://go.dev               |
-| Haskell  | v9           | https://haskell.org          |
+| Python2  | 2.7.x        | https://pypy.org             |
+| Python3  | 3.9.x        | https://pypy.org             |
+| NodeJs   | 16.x.x       | https://nodejs.org           |
+| Rust     | 1.61.x       | https://rust-lang.org        |
+| Ruby     | 3.1.x        | https://ruby-lang.org        |
+| Go       | 1.18.x       | https://go.dev               |
+| Haskell  | 9.x.x        | https://haskell.org          |
 | C        | GCC V12      | https://gcc.gnu.org          |
 | C++      | GCC V12      | https://gcc.gnu.org          |
 | C#       | .NET 6.0     | https://dotnet.microsoft.com |
 | F#       | .NET 6.0     | https://dotnet.microsoft.com |
 | Java     | OpenJDK 18.0 | https://openjdk.java.net     |
+| Scala    | 3.1.2        | https://www.scala-lang.org/  |
+| Kotlin   | 1.7.0        | https://kotlinlang.org/      |
 
 ## gVisor (https://gvisor.dev/)
 
