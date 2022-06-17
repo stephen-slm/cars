@@ -211,7 +211,7 @@ var Compilers = map[string]*LanguageCompiler{
 	"kotlin": {
 		Compiler: "openjdk",
 		Language: "Kotlin",
-		runSteps: "java -jar solution.jar",
+		runSteps: "java -jar /solution.jar",
 		compileSteps: []string{
 			"/kotlinc solution.kt -include-runtime -d /solution.jar",
 		},

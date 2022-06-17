@@ -56,7 +56,6 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 | Java     | OpenJDK 18.0 | https://openjdk.java.net     |
 | Scala    | 3.1.2        | https://www.scala-lang.org/  |
 | Kotlin   | 1.7.0        | https://kotlinlang.org/      |
-|
 
 ## gVisor (https://gvisor.dev/)
 
