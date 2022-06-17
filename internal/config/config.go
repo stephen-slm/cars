@@ -25,7 +25,7 @@ func GetCurrentEnvironment() string {
 		return currentEnvironment
 	}
 
-	for _, s := range []string{"staging", "production"} {
+	for _, s := range []string{"staging", "production", "development"} {
 		if environment == s {
 			currentEnvironment = s
 			return currentEnvironment
