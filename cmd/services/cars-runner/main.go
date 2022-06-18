@@ -33,7 +33,7 @@ func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (c
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, params.CompileTimeout)
 	defer cancel()
 
 	timeAtExecution = time.Now()
@@ -73,7 +73,7 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (runOu
 		runtimeNano = time.Since(timeAtExecution).Nanoseconds()
 	}()
 
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(params.RunTimeoutSec)*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, params.RunTimeout)
 	defer cancel()
 
 	// Create the command with our context

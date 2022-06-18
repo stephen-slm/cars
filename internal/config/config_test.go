@@ -12,7 +12,7 @@ func TestGetCurrentEnvironment(t *testing.T) {
 		environmentFlag string
 	}{{
 		name:            "should default if not provided",
-		want:            defaultEnvironment,
+		want:            DefaultEnvironment,
 		environmentFlag: "",
 	}, {
 		name:            "should return staging if environment is set to staging",
@@ -28,7 +28,7 @@ func TestGetCurrentEnvironment(t *testing.T) {
 		environmentFlag: "development",
 	}, {
 		name:            "should default if value is defined but not production or staging",
-		want:            defaultEnvironment,
+		want:            DefaultEnvironment,
 		environmentFlag: "invalid-value",
 	}}
 

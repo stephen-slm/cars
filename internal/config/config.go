@@ -8,7 +8,7 @@ import (
 
 var currentEnvironment = ""
 
-const defaultEnvironment = "development"
+const DefaultEnvironment = "development"
 
 // GetCurrentEnvironment returns the current environment if the system
 // is running in windows or a linux environment. E.g defaulting to
@@ -21,7 +21,7 @@ func GetCurrentEnvironment() string {
 	environment := os.Getenv("environment")
 
 	if environment == "" {
-		currentEnvironment = defaultEnvironment
+		currentEnvironment = DefaultEnvironment
 		return currentEnvironment
 	}
 
@@ -32,7 +32,7 @@ func GetCurrentEnvironment() string {
 		}
 	}
 
-	currentEnvironment = defaultEnvironment
+	currentEnvironment = DefaultEnvironment
 	return currentEnvironment
 
 }
