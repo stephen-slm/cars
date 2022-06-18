@@ -103,8 +103,7 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 
 	sandboxRequest := sandbox.Request{
 		ID:               compileMsg.ID,
-		Timeout:          1,
-		MemoryConstraint: 1024,
+		ExecutionProfile: sandbox.GetProfileForMachine(),
 		Path:             filepath.Join(os.TempDir(), "executions", "raw", compileMsg.ID),
 		SourceCode:       string(sourceCode),
 		Compiler:         compiler,

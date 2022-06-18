@@ -1,7 +1,6 @@
 package sandbox
 
 import (
-	"compile-and-run-sandbox/internal/docker"
 	"context"
 	"sync"
 	"sync/atomic"
@@ -12,15 +11,13 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+
+	"compile-and-run-sandbox/internal/docker"
 )
 
 type ContainerManager struct {
 	containers   sync.Map
 	dockerClient *client.Client
-
-	// If G-visor should be used as a container runtime for all container executions
-	// or should it be using the default container runtime.
-	enableGVisor bool
 
 	// the limiter will be a buffered channel used to determine the number of possible
 	// containers that can be executed at any one time. When the container is removed
@@ -37,25 +34,14 @@ func NewSandboxContainerManager(dockerClient *client.Client, maxConcurrentContai
 		containers:   sync.Map{},
 	}
 
-	// check to see if we are configured to use g-visor or not.
-	// if we are not configured then we should warn to the user
-	// otherwise allow all containers  to use it.
-	if docker.IsGvisorInstalled() {
-		log.Warn().Str("runtime", docker.GVisorRuntime).Msg("Docker Runtime")
-		manager.enableGVisor = true
-	} else {
-		log.Warn().Str("runtime", "default").Msg("Docker Runtime")
-	}
+	// a simple check that will do a log on start up.
+	docker.IsGvisorInstalled()
 
 	return manager
 }
 
 func (s *ContainerManager) AddContainer(ctx context.Context, request *Request) (containerID string, complete <-chan string, err error) {
 	container := NewSandboxContainer(request, s.dockerClient)
-
-	if s.enableGVisor {
-		container.SetRuntime(docker.GVisorRuntime)
-	}
 
 	s.limiter <- request.ID
 	containerID, complete, err = container.Run(ctx)
