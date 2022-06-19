@@ -71,19 +71,10 @@ type Request struct {
 	// response comes through that there is a related id to match it up with the
 	// request.
 	ID string
-	// The max amount of timeout for the given executed code, if the code docker
-	// container is running for longer than the given timeout then the code is
-	// rejected. This is used to ensure that the source code is not running for
-	// longer than required.
-	Timeout int
-	// The max amount of timeout for a given container to execute the entire
-	// code including compiling. if this is not set then it will be based on
-	// timeout + 50%.
-	ContainerTimeout int
-	// The upper limit of the max amount of memory that the given execution can
-	// perform. By default, the upper limit of the amount of mb the given
-	// execution can run with.
-	MemoryConstraint int64
+	// The ExecutionProfile describes the configuration of the container duration
+	// execution, including its upper and lower limits. Its max compile and
+	// runtime values.
+	ExecutionProfile *Profile
 	// The given path that would be mounted and shared with the given docker
 	// container. This is where the container will be reading the source code
 	// from and writing the response too. Once this has been completed, this
@@ -105,12 +96,13 @@ type Request struct {
 }
 
 type ExecutionParameters struct {
-	ID            string   `json:"id"`
-	Language      string   `json:"language"`
-	StandardInput string   `json:"standardInput"`
-	CompileSteps  []string `json:"compileSteps"`
-	Run           string   `json:"runSteps"`
-	RunTimeoutSec int      `json:"runTimeoutSec"`
+	CompileSteps   []string      `json:"compileSteps"`
+	CompileTimeout time.Duration `json:"compileTimeoutSec"`
+	ID             string        `json:"id"`
+	Language       string        `json:"language"`
+	Run            string        `json:"runSteps"`
+	RunTimeout     time.Duration `json:"runTimeoutSec"`
+	StandardInput  string        `json:"standardInput"`
 }
 
 func (e2 *ExecutionParameters) MarshalZerologObject(e *zerolog.Event) {
@@ -152,14 +144,6 @@ type Container struct {
 	status ContainerStatus
 	events []*events.Message
 
-	// The container runtime, this can be configured to use gVisor for better safety
-	// but this has a limitation of being a linux only implementation and cannot
-	// be used during  windows development
-	//
-	// If left empty then the default container runtime will be used.
-	//	Runtime string
-	runtime string
-
 	executionResponse *ExecutionResponse
 	complete          chan string
 
@@ -175,10 +159,6 @@ func NewSandboxContainer(request *Request, dockerClient *client.Client) *Contain
 		request: request,
 		events:  []*events.Message{},
 	}
-}
-
-func (d *Container) SetRuntime(runtime string) {
-	d.runtime = runtime
 }
 
 // Run the sandbox container with the given configuration options.
@@ -253,12 +233,13 @@ func (d *Container) prepare(_ context.Context) error {
 	runnerConfig := filepath.Join(d.request.Path, "runner.json")
 
 	parameters := ExecutionParameters{
-		ID:            d.request.ID,
-		Language:      d.request.Compiler.Language,
-		RunTimeoutSec: d.request.Timeout,
-		StandardInput: d.request.Compiler.InputFile,
-		CompileSteps:  d.request.Compiler.compileSteps,
-		Run:           d.request.Compiler.runSteps,
+		ID:             d.request.ID,
+		Language:       d.request.Compiler.Language,
+		RunTimeout:     d.request.ExecutionProfile.CodeTimeout,
+		CompileTimeout: d.request.ExecutionProfile.CompileTimeout,
+		StandardInput:  d.request.Compiler.InputFile,
+		CompileSteps:   d.request.Compiler.compileSteps,
+		Run:            d.request.Compiler.runSteps,
 	}
 
 	runnerFile, runnerError := os.Create(runnerConfig)
@@ -289,7 +270,6 @@ func (d *Container) execute(ctx context.Context) error {
 	// that format.
 	// var workingDirectory = ConvertPathToUnix(this._path)
 	workingDirectory := unix.ConvertPathToUnix(d.request.Path)
-	containerTimeout := d.request.ContainerTimeout
 
 	create, err := d.client.ContainerCreate(
 		ctx,
@@ -297,15 +277,15 @@ func (d *Container) execute(ctx context.Context) error {
 			Entrypoint:      commandLine,
 			Image:           d.request.Compiler.VirtualMachineName,
 			NetworkDisabled: true,
-			StopTimeout:     &containerTimeout,
 			WorkingDir:      "/input",
 		},
 		&container.HostConfig{
-			Runtime:    d.runtime,
-			AutoRemove: true,
+			Runtime:    d.request.ExecutionProfile.Runtime.String(),
+			AutoRemove: d.request.ExecutionProfile.AutoRemove,
 			Binds:      []string{fmt.Sprintf("%s:/input", workingDirectory)},
 			Resources: container.Resources{
-				Memory: d.request.MemoryConstraint * 1000000,
+				Memory:     d.request.ExecutionProfile.Memory.Bytes(),
+				MemorySwap: d.request.ExecutionProfile.MemorySwap.Bytes(),
 			},
 		},
 		nil,
