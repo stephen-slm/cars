@@ -36,14 +36,14 @@ type Profile struct {
 	// The maximum amount of memory the container can use. If you set this
 	// option, the minimum allowed value is 6m (6 megabytes). That is, you must
 	// set the value to at least 6 megabytes.
-	Memory memory.MemorySize
+	Memory memory.Memory
 	// The amount of memory this container is allowed to swap to disk.
-	MemorySwap memory.MemorySize
+	MemorySwap memory.Memory
 }
 
 // ProfileValueMaps A map of profile ids to profiles, this mapping is used
 // between the consumer to determine which profile to use.
-var profileValueMaps = map[uint]*Profile{
+var _ = map[uint]*Profile{
 	1: profiles["production"],
 }
 

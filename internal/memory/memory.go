@@ -1,18 +1,18 @@
 package memory
 
-type MemorySize int64
+type Memory int64
 
 const (
-	Byte     MemorySize = 1
-	Kilobyte            = 1024 * Byte
+	Byte     Memory = 1
+	Kilobyte        = 1024 * Byte
 	Megabyte            = 1024 * Kilobyte
 	Gigabyte            = 1024 * Megabyte
 )
 
-func (d MemorySize) Bytes() int64 { return int64(d) }
+func (d Memory) Bytes() int64 { return int64(d) }
 
-func (d MemorySize) Kilobytes() int64 { return int64(d) / int64(Kilobyte) }
+func (d Memory) Kilobytes() int64 { return int64(d) / int64(Kilobyte) }
 
-func (d MemorySize) Megabytes() int64 { return int64(d) / int64(Megabyte) }
+func (d Memory) Megabytes() int64 { return int64(d) / int64(Megabyte) }
 
-func (d MemorySize) Gigabytes() int64 { return int64(d) / int64(Gigabyte) }
+func (d Memory) Gigabytes() int64 { return int64(d) / int64(Gigabyte) }

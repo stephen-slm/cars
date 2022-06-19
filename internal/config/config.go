@@ -41,7 +41,7 @@ func GetCurrentEnvironment() string {
 // is running in windows or a linux environment. E.g defaulting to
 // linux for mac.
 func GetCurrentOs() string {
-	if strings.ToLower(runtime.GOOS) == "windows" {
+	if strings.EqualFold(runtime.GOOS, "windows") {
 		return "windows"
 	}
 

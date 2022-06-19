@@ -144,14 +144,6 @@ type Container struct {
 	status ContainerStatus
 	events []*events.Message
 
-	// The container runtime, this can be configured to use gVisor for better safety
-	// but this has a limitation of being a linux only implementation and cannot
-	// be used during  windows development
-	//
-	// If left empty then the default container runtime will be used.
-	//	Runtime string
-	runtime string
-
 	executionResponse *ExecutionResponse
 	complete          chan string
 
