@@ -112,7 +112,7 @@ func main() {
 
 	log.Info().Msg("listening on :8080")
 
-	if listenErr := http.ListenAndServe(":8080", handlers.CompressHandler(r)); listenErr != nil {
+	if listenErr := http.ListenAndServe(":8080", handlers.CORS()(handlers.CompressHandler(r))); listenErr != nil {
 		log.Fatal().Err(listenErr).Msg("failed to listen")
 	}
 }
