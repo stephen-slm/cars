@@ -104,15 +104,24 @@ func main() {
 		Queue:       queueRunner,
 	}
 
-	r.HandleFunc("/compile", compileHandlers.HandleCompileRequest).Methods("POST")
-	r.HandleFunc("/compile/{id}", compileHandlers.HandleGetCompileResponse).Methods("GET")
+	r.HandleFunc("/compile", compileHandlers.HandleCompileRequest).Methods(http.MethodPost)
+	r.HandleFunc("/compile/{id}", compileHandlers.HandleGetCompileResponse).Methods(http.MethodGet)
 
-	r.HandleFunc("/languages", routing.HandleListLanguagesSupported).Methods("GET")
-	r.HandleFunc("/languages/{lang}/template", routing.HandleGetLanguageTemplate).Methods("GET")
+	r.HandleFunc("/languages", routing.HandleListLanguagesSupported).Methods(http.MethodGet)
+	r.HandleFunc("/languages/{lang}/template", routing.HandleGetLanguageTemplate).Methods(http.MethodGet)
 
 	log.Info().Msg("listening on :8080")
 
-	if listenErr := http.ListenAndServe(":8080", handlers.CORS()(handlers.CompressHandler(r))); listenErr != nil {
+	r.Use(mux.CORSMethodMiddleware(r))
+
+	credentialsOk := handlers.AllowCredentials()
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	headersOk := handlers.AllowedHeaders([]string{"Content-Type"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+
+	handler := handlers.CORS(credentialsOk, headersOk, originsOk, methodsOk)(r)
+
+	if listenErr := http.ListenAndServe(":8080", handler); listenErr != nil {
 		log.Fatal().Err(listenErr).Msg("failed to listen")
 	}
 }
