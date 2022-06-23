@@ -13,10 +13,6 @@ body {
     margin: 0;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    margin: 0 0 16px;
-}
-
 .wrapper {
     display: flex;
     flex-wrap: nowrap;
@@ -43,49 +39,26 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 #editor {
-    box-shadow: 0px -2px 4px 4px rgba(40, 42, 54, 0.6);
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
 }
 
-@media only screen and (min-width: 992px) {
-    #editor {
-        box-shadow: -2px 0px 4px 4px rgba(40, 42, 54, 0.6);
-    }
+#preview div {
+    /* Add shadows to create the "card" effect */
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    transition: 0.3s;
+    padding: 10px;
 }
 
 #preview {
-    padding: 16px;
-    font-family: "IBM Plex Sans", sans-serif;
+    display: grid;
+    padding: 10px;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 10px;
+    grid-auto-flow: row;
+    grid-template-areas:
+    "."
+    "."
+    ".";
 }
 
-#preview code {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 0.875em;
-    padding: 0px 5px;
-    border: 1px solid #ddd;
-    background-color: #f8f8f8;
-    border-radius: 3px;
-    white-space: nowrap;
-}
-
-#preview pre {
-    margin: 15px 0;
-    padding: 5px 10px;
-    border: 1px solid #ddd;
-    background-color: #f8f8f8;
-    border-radius: 3px;
-    line-height: 1.5;
-    overflow: auto;
-}
-
-#preview pre code {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 0.875em;
-    padding: 0;
-    border: none;
-    background-color: transparent;
-    white-space: pre;
-}
-
-#preview img {
-    width: 100%;
-}
