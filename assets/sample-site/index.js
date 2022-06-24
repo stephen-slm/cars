@@ -7,8 +7,48 @@ const state = {
         "cpp": "c_cpp",
         "node": "javascript",
         "fsharp": "fsharp",
-    }
+    },
+
+    outputDiv: document.getElementById("code-output"),
+    compilerOutputDiv: document.getElementById("compiler-output"),
 }
+
+
+/////////////////////////////////////////////////////////////
+// HELPERS
+/////////////////////////////////////////////////////////////
+
+function isFinishingStatus(status) {
+    const endingStatusValues =["Finished", "Killed", "MemoryConstraintExceeded", "TimeLimitExceeded",
+        "CompilationFailed", "RunTimeError", "NonDeterministicError"]
+
+    return endingStatusValues.includes(status)
+}
+
+function disableOrEnableRunButton(value) {
+    document.getElementById("run").disabled = value
+}
+
+function clearAllOutput() {
+    state.outputDiv.innerText = ''
+    state.compilerOutputDiv.innerText = ''
+}
+
+function writeCompileStatusOutputToDisplay(output) {
+    console.log(JSON.stringify(output, null, 2))
+
+    const performance = `compileMs: ${output["compile_ms"]}, runtimeMs: ${output["runtime_ms"]}`
+    let outputContent = `${performance}\n${output["output"] || ""}`
+
+    if (!isFinishingStatus(output.status)) {
+        outputContent = `${state.outputDiv.innerText}\n${output.status}...`
+    }
+
+
+    state.outputDiv.innerText = outputContent
+    state.compilerOutputDiv.innerText = output["compiler_output"] || ""
+}
+
 
 /////////////////////////////////////////////////////////////
 // EVENT CALLS
@@ -22,8 +62,13 @@ function handleEditorValueChange() {
     document.querySelector("#compiler-output").innerHTML = state.editor.getValue()
 }
 
+function handleCodeExecutionTakenTooLong(id, executionCount) {
+
+}
+
 async function handleCompileRequest(event) {
-    event.target.disabled = true
+    disableOrEnableRunButton(true)
+    clearAllOutput()
 
     const code = state.editor.getValue();
     const language = state.currentLanguage
@@ -31,7 +76,23 @@ async function handleCompileRequest(event) {
     const id = await compileEditorCode(language, code, [], [])
     console.log(`language: ${language} - id: ${id}`)
 
-    event.target.disabled = false
+    setTimeout(performExecutionLookup.bind(this, id, 1), 500)
+
+}
+
+async function performExecutionLookup(id, executionCount = 0) {
+    if (executionCount > 20) {
+        return handleCodeExecutionTakenTooLong(id, executionCount)
+    }
+
+    const output = await getExecutionCurrentStatus(id)
+    writeCompileStatusOutputToDisplay(output)
+
+    if (isFinishingStatus(output.status)) {
+        return disableOrEnableRunButton(false)
+    }
+
+    setTimeout(performExecutionLookup.bind(this, id, executionCount + 1), 500)
 }
 
 
@@ -94,6 +155,11 @@ async function compileEditorCode(language, code, stdIn = [], expectedStdOut = []
 
     const {id} = await response.json()
     return id
+}
+
+async function getExecutionCurrentStatus(id) {
+    const response = await fetch(`http://localhost:8080/compile/${id}`)
+    return await response.json()
 }
 
 async function getLanguageTemplateValue(language) {
