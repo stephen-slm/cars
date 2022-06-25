@@ -13,15 +13,60 @@
         <div class="wrapper">
             <div id="editor"></div>
             <div id="preview">
-                <div>
+                <div id="settings">
                     <label>
                         <select id="language-modes">
                         </select>
                     </label>
+                    <button id="reset-code">Reset Code</button>
                     <button id="run">Run</button>
+                    <label>
+                        <input type="checkbox" id="enable-test" checked="checked">
+                        Enable Test
+                    </label>
+                    <h3 class="header">Metrics</h3>
+                    <div class="metrics">
+                        <div class="metric">Status:
+                            <div id="execution-status"></div>
+                        </div>
+                        <div class="metric">Test Status:
+                            <div id="execution-test-status"></div>
+                        </div>
+                        <div class="metric">Compiler Runtime (Ms):
+                            <div id="compiler-runtime"></div>
+                        </div>
+                        <div class="metric">Code Runtime (Ms):
+                            <div id="code-runtime"></div>
+                        </div>
+                    </div>
+                    <h3 class="header">Input Testing</h3>
+                    <p style="max-width: 600px; text-align: justify">
+                        Here you can provide a standard input for the source code and an expected standard output, this
+                        will be used to test the source code, for example take in a number and output that number in
+                        a power of two. Another example would be taking in a string and expecting that string in reverse
+                        back.
+                    </p>
+                    <div class="inputOutputTest">
+                        <label>
+                            <div>Standard input</div>
+                            <textarea id="standard-input" class="card">Hello World</textarea>
+                        </label>
+                        <label>
+                            <div>Expected input</div>
+                            <textarea id="expected-output" class="card">dlroW olleH</textarea>
+                        </label>
+                    </div>
                 </div>
-                <div id="code-output">output</div>
-                <div id="compiler-output">compiler output</div>
+                <div id="code">
+
+                    <h3 class="header">Output</h3>
+                    <div id="code-output">
+                    </div>
+                </div>
+                <div id="compiler">
+                    <h3 class="header">Compiler Output</h3>
+                    <div id="compiler-output"></div>
+                </div>
             </div>
         </div>
     </div>

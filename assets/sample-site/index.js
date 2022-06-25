@@ -11,6 +11,19 @@ const state = {
 
     outputDiv: document.getElementById("code-output"),
     compilerOutputDiv: document.getElementById("compiler-output"),
+
+    languageModes: document.getElementById("language-modes"),
+    codeRuntimeMs: document.getElementById("code-runtime"),
+    compilerRuntimeMs: document.getElementById("compiler-runtime"),
+    codeStatus: document.getElementById("execution-status"),
+    codeTestStatus: document.getElementById("execution-test-status"),
+    enableTestCheck: document.getElementById("enable-test"),
+    runButton: document.getElementById("run"),
+    resetCodeButton: document.getElementById("reset-code"),
+
+
+    testStandardInput: document.getElementById("standard-input"),
+    testExpectedOutput: document.getElementById("expected-output"),
 }
 
 
@@ -32,53 +45,28 @@ function disableOrEnableRunButton(value) {
 function clearAllOutput() {
     state.outputDiv.innerText = ''
     state.compilerOutputDiv.innerText = ''
+    state.codeStatus.innerText = ''
+    state.codeTestStatus.innerText = ''
 }
 
 function writeCompileStatusOutputToDisplay(output) {
     console.log(JSON.stringify(output, null, 2))
 
-    const performance = `compileMs: ${output["compile_ms"]}, runtimeMs: ${output["runtime_ms"]}`
-    let outputContent = `${performance}\n${output["output"] || ""}`
+    let outputContent = output["output"] || ""
 
     if (!isFinishingStatus(output.status)) {
-        outputContent = `${state.outputDiv.innerText}\n${output.status}...`
+        outputContent = `${state.outputDiv.innerText}${output.status}...\n`
     }
 
+    state.compilerRuntimeMs.innerText = output["compile_ms"] || "0"
+    state.codeRuntimeMs.innerText = output["runtime_ms"] || "0"
+    state.codeStatus.innerText = output.status
+    state.codeTestStatus.innerText = output["test_status"]
 
     state.outputDiv.innerText = outputContent
     state.compilerOutputDiv.innerText = output["compiler_output"] || ""
 }
 
-
-/////////////////////////////////////////////////////////////
-// EVENT CALLS
-/////////////////////////////////////////////////////////////
-
-async function handleLanguageSelectionChange(event) {
-    return await updateEditorForLanguage(event.target.value.toLowerCase())
-}
-
-function handleEditorValueChange() {
-    document.querySelector("#compiler-output").innerHTML = state.editor.getValue()
-}
-
-function handleCodeExecutionTakenTooLong(id, executionCount) {
-
-}
-
-async function handleCompileRequest(event) {
-    disableOrEnableRunButton(true)
-    clearAllOutput()
-
-    const code = state.editor.getValue();
-    const language = state.currentLanguage
-
-    const id = await compileEditorCode(language, code, [], [])
-    console.log(`language: ${language} - id: ${id}`)
-
-    setTimeout(performExecutionLookup.bind(this, id, 1), 500)
-
-}
 
 async function performExecutionLookup(id, executionCount = 0) {
     if (executionCount > 20) {
@@ -97,10 +85,55 @@ async function performExecutionLookup(id, executionCount = 0) {
 
 
 /////////////////////////////////////////////////////////////
+// EVENT CALLS
+/////////////////////////////////////////////////////////////
+
+async function handleLanguageSelectionChange(event) {
+    return await updateEditorForLanguage(event.target.value.toLowerCase(), false)
+}
+
+
+async function handleResetCodeTemplatePressed() {
+    return await updateEditorForLanguage(state.currentLanguage, true)
+}
+
+function handleCodeExecutionTakenTooLong(id, executionCount) {
+
+}
+
+
+async function handleCompileRequest(event) {
+    disableOrEnableRunButton(true)
+    clearAllOutput()
+
+    const code = state.editor.getValue();
+    const language = state.currentLanguage
+
+    const stdInData = state.enableTestCheck.checked
+        ? state.testStandardInput.value.split('\n')
+        : []
+
+    const expectedOut = state.enableTestCheck.checked
+        ? state.testExpectedOutput.value.split('\n')
+        : []
+
+    const id = await compileEditorCode(language, code, stdInData, expectedOut)
+    console.log(`language: ${language} - id: ${id}`)
+
+    setTimeout(performExecutionLookup.bind(this, id, 1), 500)
+}
+
+function handleOnTestEnableClick() {
+    state.testStandardInput.disabled = !state.enableTestCheck.checked
+    state.testExpectedOutput.disabled = !state.enableTestCheck.checked
+}
+
+
+/////////////////////////////////////////////////////////////
 // EDITOR ACTIONS
 /////////////////////////////////////////////////////////////
 
-async function updateEditorForLanguage(language) {
+async function updateEditorForLanguage(language, force) {
     state.currentLanguage = language;
 
     const mappingValue = state.languageAceMapping[language] || language
@@ -121,9 +154,6 @@ function configureEditor() {
         showPrintMargin: true,
     });
 
-    state.editor.session.on('change', handleEditorValueChange);
-
-    document.querySelector('#language-modes').addEventListener("change", handleLanguageSelectionChange);
 }
 
 
@@ -142,15 +172,19 @@ function configureEditor() {
  * @returns {Promise<string>} The id of the execution
  */
 async function compileEditorCode(language, code, stdIn = [], expectedStdOut = []) {
+    const body = {
+        language,
+        "source_code": code,
+        "stdin_data": stdIn,
+        "expected_stdout_data": expectedStdOut
+    }
+
+    console.log(JSON.stringify(body, null, 2))
+
     const response = await fetch('http://localhost:8080/compile', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            language,
-            "source_code": code,
-            "stdin_data": stdIn,
-            "expected_stdout_data": expectedStdOut
-        })
+        body: JSON.stringify(body)
     })
 
     const {id} = await response.json()
@@ -191,7 +225,10 @@ async function init() {
     await updateEditorForLanguage(state.languages[0]["language_code"])
 
     // setup event handlers
-    document.getElementById("run").addEventListener("click", handleCompileRequest)
+    state.runButton.addEventListener("click", handleCompileRequest)
+    state.resetCodeButton.addEventListener("click", handleResetCodeTemplatePressed)
+    state.enableTestCheck.addEventListener("click", handleOnTestEnableClick)
+    state.languageModes.addEventListener("change", handleLanguageSelectionChange);
 }
 
 
