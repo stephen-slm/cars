@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/zerolog"
 
+	"compile-and-run-sandbox/internal/config"
 	"compile-and-run-sandbox/internal/files"
 	"compile-and-run-sandbox/internal/parser"
 	"compile-and-run-sandbox/internal/sandbox"
@@ -109,6 +110,10 @@ func main() {
 
 	r.HandleFunc("/languages", routing.HandleListLanguagesSupported).Methods(http.MethodGet)
 	r.HandleFunc("/languages/{lang}/template", routing.HandleGetLanguageTemplate).Methods(http.MethodGet)
+
+	if config.GetCurrentEnvironment() == config.DevelopmentEnvironment {
+		r.PathPrefix("/").Handler(http.FileServer(http.Dir("./assets/sample-site/")))
+	}
 
 	log.Info().Msg("listening on :8080")
 
