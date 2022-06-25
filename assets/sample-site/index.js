@@ -96,6 +96,24 @@ function writeCompileStatusOutputToDisplay(output) {
 
     state.outputDiv.innerText = outputContent
     state.compilerOutputDiv.innerText = output["compiler_output"] || ""
+
+    // update simple colors to show good or bad result
+    state.codeTestStatus.classList.remove("green", "orange", "red")
+    state.codeStatus.classList.remove("green", "orange", "red")
+
+    if (output.status !== 'Finished')  {
+        state.codeStatus.classList.add("red")
+    } else {
+        state.codeStatus.classList.add("green")
+    }
+
+    if (output.test_status === 'TestFailed')  {
+        state.codeTestStatus.classList.add("red")
+    } else if (output.test_status === "TestPassed") {
+        state.codeTestStatus.classList.add("green")
+    } else {
+        state.codeTestStatus.classList.add("yellow")
+    }
 }
 
 

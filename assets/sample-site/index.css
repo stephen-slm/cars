@@ -96,3 +96,18 @@ body {
     max-height: 80px;
     height: 80px;
 }
+
+.green {
+    font-weight:  bold;
+    color: green;
+}
+
+.red {
+    font-weight:  bold;
+    color: red;
+}
+
+.yellow {
+    font-weight:  bold;
+    color: orange;
+}
