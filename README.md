@@ -26,6 +26,7 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 
 ## Documentation
 
+* [Setup Guide (Running locally, Development)](./docs/RUNNING_LOCALLY.md)
 * [API Endpoints (Compiling, Templates, Languages)](./docs/ENDPOINTS.md)
 * [API Sample Site (Compiling, Running, Testing)](./docs/SAMPLE_SITE.md)
 
