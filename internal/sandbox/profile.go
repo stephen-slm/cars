@@ -51,14 +51,14 @@ var _ = map[uint]*Profile{
 var profiles = map[string]*Profile{
 	"development_linux": {
 		AutoRemove:     true,
-		CodeTimeout:    time.Second * 10,
+		CodeTimeout:    time.Second * 5,
 		CompileTimeout: time.Second * 20,
 		Memory:         memory.Gigabyte * 10,
 		Runtime:        GVisor,
 	},
 	"development_windows": {
 		AutoRemove:     true,
-		CodeTimeout:    time.Second * 10,
+		CodeTimeout:    time.Second * 5,
 		CompileTimeout: time.Second * 20,
 		Memory:         memory.Gigabyte * 10,
 		Runtime:        Default,

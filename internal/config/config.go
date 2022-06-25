@@ -9,6 +9,7 @@ import (
 var currentEnvironment = ""
 
 const DefaultEnvironment = "development"
+const DevelopmentEnvironment = "development"
 
 // GetCurrentEnvironment returns the current environment if the system
 // is running in windows or a linux environment. E.g defaulting to
