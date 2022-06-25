@@ -112,7 +112,7 @@ function writeCompileStatusOutputToDisplay(output) {
     } else if (output.test_status === "TestPassed") {
         state.codeTestStatus.classList.add("green")
     } else {
-        state.codeTestStatus.classList.add("yellow")
+        state.codeTestStatus.classList.add("orange")
     }
 }
 
