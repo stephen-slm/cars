@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -64,13 +65,20 @@ func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (c
 	return
 }
 
-func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (runOutput []string, runtimeNano int64, err error) {
+type RunExuection struct {
+	standardOutput []string
+	errorOutput    []string
+	runtimeNano    int64
+}
+
+func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunExuection, error) {
 	// this has to be defined here since we always want this total time
 	// and the total time is determined in to defer func.
 	var timeAtExecution time.Time
+	resp := RunExuection{}
 
 	defer func() {
-		runtimeNano = time.Since(timeAtExecution).Nanoseconds()
+		resp.runtimeNano = time.Since(timeAtExecution).Nanoseconds()
 	}()
 
 	ctx, cancel := context.WithTimeout(ctx, params.RunTimeout)
@@ -82,29 +90,75 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (runOu
 	inputFile, _ := os.Open(fmt.Sprintf("/input/%s", params.StandardInput))
 	defer inputFile.Close()
 
+	outputFile, _ := os.Create("/input/run-standard-output")
+	outputErrFile, _ := os.Create("/input/run-error-output")
+
 	cmd := exec.CommandContext(ctx, command[0], command[1:]...)
+
 	cmd.Stdin = inputFile
+	cmd.Stdout = outputFile
+	cmd.Stderr = outputErrFile
 
 	timeAtExecution = time.Now()
-	output, cmdErr := cmd.CombinedOutput()
+	cmdErr := cmd.Run()
 
-	if len(output) != 0 {
-		// trim the last new line if any to correctly allow testing of output
-		trimmedOutput := strings.TrimSuffix(string(output), "\n")
-		runOutput = strings.Split(trimmedOutput, "\n")
+	// close the file after writing to allow full reading from the start
+	// current implementation does not allow writing and then reading from the
+	// start
+	outputFile.Close()
+	outputErrFile.Close()
+
+	outputFile, _ = os.Open("/input/run-standard-output")
+	outputErrFile, _ = os.Open("/input/run-error-output")
+
+	// only take the first 1k from both the error output and the standard output
+	// this is by design to stop the chance of people abusing the system and
+	// writing infinitely to the output streams until it crashes the memory
+	// on read.
+	scanner := bufio.NewScanner(outputFile)
+	scanner.Split(bufio.ScanLines)
+
+	outputLines := make([]string, 0)
+	var outputLinesCount int
+
+	for scanner.Scan() {
+		outputLines = append(outputLines, scanner.Text())
+		outputLinesCount += 1
+
+		if outputLinesCount >= 1_000 {
+			break
+		}
 	}
+
+	outputErrLines := make([]string, 0)
+	var outputErrLinesCount int
+
+	scanner = bufio.NewScanner(outputErrFile)
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		outputErrLines = append(outputErrLines, scanner.Text())
+		outputErrLinesCount += 1
+
+		if outputErrLinesCount >= 1_000 {
+			break
+		}
+	}
+
+	fmt.Println("outlines", outputLinesCount, outputLines)
+	fmt.Println("errLines", outputErrLinesCount, outputErrLines)
+
+	resp.standardOutput = outputLines
+	resp.errorOutput = outputErrLines
 
 	// We want to check the context error to see if the timeout was executed.
 	// The error returned by cmd.Output() will be OS specific based on what
 	// happens when a process is killed.
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		err = ctx.Err()
-		return
+		return &resp, ctx.Err()
 	}
 
-	err = cmdErr
-
-	return
+	return &resp, cmdErr
 }
 
 func main() {
@@ -126,8 +180,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var compilerOutput, runOutput []string
-	var runtime, compileTime int64
+	var runExecution *RunExuection
+	var compilerOutput []string
+	var compileTime int64
 	var compileErr, runtimeErr error
 
 	// configure the file for th compiled output, this is the text
@@ -148,7 +203,7 @@ func main() {
 	// output file for the actual execution
 	if responseCode == sandbox.Finished {
 
-		runOutput, runtime, runtimeErr = runProject(ctx, &params)
+		runExecution, runtimeErr = runProject(ctx, &params)
 
 		if runtimeErr != nil {
 			log.Error().Err(runtimeErr).
@@ -164,10 +219,10 @@ func main() {
 	}
 
 	resp, _ := json.Marshal(sandbox.ExecutionResponse{
-		Runtime:        runtime,
 		CompileTime:    compileTime,
-		Output:         runOutput,
 		CompilerOutput: compilerOutput,
+		Output:         runExecution.standardOutput,
+		Runtime:        runExecution.runtimeNano,
 		Status:         responseCode,
 	})
 
