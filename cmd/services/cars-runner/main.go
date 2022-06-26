@@ -13,6 +13,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"compile-and-run-sandbox/internal/memory"
+	"compile-and-run-sandbox/internal/pid"
 	"compile-and-run-sandbox/internal/sandbox"
 )
 
@@ -100,7 +102,22 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 	cmd.Stderr = outputErrFile
 
 	timeAtExecution = time.Now()
-	cmdErr := cmd.Run()
+	cmdErr := cmd.Start()
+
+	maxMemoryConsumption := memory.Byte
+
+	for !cmd.ProcessState.Exited() {
+		if state, err := pid.GetStat(cmd.Process.Pid); err == nil {
+			fmt.Printf("memory %d", state.Memory.Megabytes())
+			time.Sleep(5 * time.Millisecond)
+
+			if maxMemoryConsumption < state.Memory {
+				maxMemoryConsumption = state.Memory
+			}
+		}
+	}
+
+	fmt.Printf("max memory %d", maxMemoryConsumption.Megabytes())
 
 	// close the file after writing to allow full reading from the start
 	// current implementation does not allow writing and then reading from the
