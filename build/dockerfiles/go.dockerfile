@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine as BUILDER
+FROM golang:1.18-buster as BUILDER
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM golang:1.18-alpine
+FROM golang:1.18-buster
 
 COPY --from=BUILDER /runner /runner
 

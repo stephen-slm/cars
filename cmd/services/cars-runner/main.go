@@ -101,23 +101,39 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 	cmd.Stdout = outputFile
 	cmd.Stderr = outputErrFile
 
+	// execution channel used to determine when to stop reading memory
+	// information from the PID. Channel will be closed once the wait has
+	// completed fully.
+	waitNotification := make(chan any)
+
 	timeAtExecution = time.Now()
-	cmdErr := cmd.Start()
 
 	maxMemoryConsumption := memory.Byte
+	cmdErr := cmd.Start()
 
-	for !cmd.ProcessState.Exited() {
-		if state, err := pid.GetStat(cmd.Process.Pid); err == nil {
-			fmt.Printf("memory %d", state.Memory.Megabytes())
-			time.Sleep(5 * time.Millisecond)
+	go func(ch <-chan any) {
+		for {
+			select {
+			case <-ch:
+				break
+			default:
+			}
 
-			if maxMemoryConsumption < state.Memory {
-				maxMemoryConsumption = state.Memory
+			if state, err := pid.GetStat(cmd.Process.Pid); err == nil {
+				fmt.Printf("cpu %f - memory %dmb\n", state.CPU, state.Memory.Megabytes())
+				time.Sleep(5 * time.Millisecond)
+
+				if maxMemoryConsumption < state.Memory {
+					maxMemoryConsumption = state.Memory
+				}
 			}
 		}
-	}
+	}(waitNotification)
 
-	fmt.Printf("max memory %d", maxMemoryConsumption.Megabytes())
+	_ = cmd.Wait()
+	close(waitNotification)
+
+	fmt.Printf("max memory %dmb\n", maxMemoryConsumption.Megabytes())
 
 	// close the file after writing to allow full reading from the start
 	// current implementation does not allow writing and then reading from the
@@ -197,7 +213,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var runExecution *RunExuection
+	var runExecution = &RunExuection{}
 	var compilerOutput []string
 	var compileTime int64
 	var compileErr, runtimeErr error
@@ -235,13 +251,15 @@ func main() {
 		}
 	}
 
-	resp, _ := json.Marshal(sandbox.ExecutionResponse{
+	resp, _ := json.MarshalIndent(sandbox.ExecutionResponse{
 		CompileTime:    compileTime,
 		CompilerOutput: compilerOutput,
 		Output:         runExecution.standardOutput,
 		Runtime:        runExecution.runtimeNano,
 		Status:         responseCode,
-	})
+	}, "", "\t")
+
+	fmt.Printf("%s\n", resp)
 
 	_ = os.WriteFile(fmt.Sprintf("/input/%s", "runner-out.json"), resp, os.ModePerm)
 }
