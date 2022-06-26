@@ -12,6 +12,8 @@ type LanguageCompiler struct {
 	// of code that is going to be executed by the requesting machine. e.g Python, Node, JavaScript,
 	// C++.
 	Language string
+	// The prefix for the related docker image used for building.
+	Dockerfile string
 	// The name of the compiler.
 	Compiler string
 	// The name of the compiler used in the steps, this is not including the actions which
@@ -36,6 +38,7 @@ type LanguageCompiler struct {
 
 var Compilers = map[string]*LanguageCompiler{
 	"python2": {
+		Dockerfile:         "python2",
 		Language:           "Python 2 (pypy)",
 		runSteps:           "pypy /input/solution.py",
 		Interpreter:        true,
@@ -46,6 +49,7 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"python": {
+		Dockerfile:         "python",
 		Language:           "Python (pypy)",
 		runSteps:           "pypy /input/solution.py",
 		Interpreter:        true,
@@ -56,6 +60,7 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"node": {
+		Dockerfile:         "node",
 		Language:           "NodeJs (Javascript)",
 		runSteps:           "node /input/solution.js",
 		Interpreter:        true,
@@ -66,6 +71,7 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"ruby": {
+		Dockerfile:         "ruby",
 		Language:           "Ruby",
 		runSteps:           "ruby /input/solution.rb",
 		Interpreter:        true,
@@ -76,9 +82,10 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"rust": {
-		Compiler: "rustc",
-		Language: "Rust",
-		runSteps: "/solution",
+		Dockerfile: "rust",
+		Compiler:   "rustc",
+		Language:   "Rust",
+		runSteps:   "/solution",
 		compileSteps: []string{
 			"rustc -o /solution /input/solution.rs",
 		},
@@ -90,9 +97,10 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"go": {
-		Compiler: "go",
-		Language: "Golang",
-		runSteps: "/solution",
+		Dockerfile: "go",
+		Compiler:   "go",
+		Language:   "Golang",
+		runSteps:   "/solution",
 		compileSteps: []string{
 			"cp /input/solution.go /project/main.go",
 			"go build -o /solution /project/main.go",
@@ -105,9 +113,10 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"haskell": {
-		Compiler: "ghc",
-		Language: "Haskell",
-		runSteps: "/solution",
+		Dockerfile: "haskell",
+		Compiler:   "ghc",
+		Language:   "Haskell",
+		runSteps:   "/solution",
 		compileSteps: []string{
 			"ghc -o /solution /input/solution.hs",
 		},
@@ -119,9 +128,10 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"c": {
-		Compiler: "gcc",
-		Language: "C",
-		runSteps: "/solution",
+		Dockerfile: "gcc",
+		Compiler:   "gcc",
+		Language:   "C",
+		runSteps:   "/solution",
 		compileSteps: []string{
 			"gcc -g -O2 -std=gnu11 -static -o /solution /input/solution.c -lm",
 		},
@@ -133,9 +143,10 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"cpp": {
-		Compiler: "gcc",
-		Language: "C++",
-		runSteps: "/solution",
+		Dockerfile: "gcc",
+		Compiler:   "gcc",
+		Language:   "C++",
+		runSteps:   "/solution",
 		compileSteps: []string{
 			"g++ -g -O2 -std=gnu++17 -static -lrt -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -o /solution /input/solution.cpp",
 		},
@@ -147,9 +158,10 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"fsharp": {
-		Compiler: "dotnet6",
-		Language: "F#",
-		runSteps: "/build-output/projectf",
+		Dockerfile: "dotnet6",
+		Compiler:   "dotnet6",
+		Language:   "F#",
+		runSteps:   "/build-output/projectf",
 		compileSteps: []string{
 			"cp /input/solution.fs /projectf/Program.fs",
 			"dotnet build --configuration Release -o /build-output/ /projectf/",
@@ -162,9 +174,10 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"csharp": {
-		Compiler: "dotnet6",
-		Language: "C#",
-		runSteps: "/build-output/projectc",
+		Dockerfile: "dotnet6",
+		Compiler:   "dotnet6",
+		Language:   "C#",
+		runSteps:   "/build-output/projectc",
 		compileSteps: []string{
 			"cp /input/solution.cs /projectc/Program.cs",
 			"dotnet build --configuration Release -o /build-output/ /projectc/",
@@ -181,9 +194,10 @@ var Compilers = map[string]*LanguageCompiler{
 	// solution class which is required for execution. If they change the Solution class
 	// name the project will fail to compile.
 	"java": {
-		Compiler: "openjdk",
-		Language: "Java",
-		runSteps: "java -cp . Solution",
+		Dockerfile: "openjdk",
+		Compiler:   "openjdk",
+		Language:   "Java",
+		runSteps:   "java -cp . Solution",
 		compileSteps: []string{
 			"javac /input/Solution.java",
 		},
@@ -195,9 +209,10 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"scala": {
-		Compiler: "openjdk",
-		Language: "Scala",
-		runSteps: "/scala -cp . Solution",
+		Dockerfile: "openjdk",
+		Compiler:   "openjdk",
+		Language:   "Scala",
+		runSteps:   "/scala -cp . Solution",
 		compileSteps: []string{
 			"/scalac /input/Solution.scala",
 		},
@@ -209,9 +224,10 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"kotlin": {
-		Compiler: "openjdk",
-		Language: "Kotlin",
-		runSteps: "java -jar /solution.jar",
+		Dockerfile: "openjdk",
+		Compiler:   "openjdk",
+		Language:   "Kotlin",
+		runSteps:   "java -jar /solution.jar",
 		compileSteps: []string{
 			"/kotlinc solution.kt -include-runtime -d /solution.jar",
 		},
