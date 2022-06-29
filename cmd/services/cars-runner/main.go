@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -138,9 +137,6 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 	_ = cmd.Wait()
 	close(waitNotification)
 
-	execution := cmd.ProcessState.SysUsage().(*syscall.Rusage)
-
-	fmt.Printf("pid: %d - max memory %dmb\n", cmd.ProcessState.Pid(), memory.Memory(execution.Maxrss).Megabytes())
 	fmt.Printf("pid: %d - max memory %dmb\n", cmd.ProcessState.Pid(), maxMemoryConsumption.Megabytes())
 
 	// close the file after writing to allow full reading from the start

@@ -8,7 +8,6 @@ package pid
 import (
 	"fmt"
 	"io/ioutil"
-	"math"
 	"os/exec"
 	"path"
 	"runtime"
@@ -274,19 +273,6 @@ func parseInt64(val string) int64 {
 }
 
 func statFromProc(pid int) (*SysInfo, error) {
-	uptimeFileBytes, err := ioutil.ReadFile(path.Join("/proc", "uptime"))
-
-	if err != nil {
-		log.Error().Err(err).Msg("failed to get proc uptime")
-		return nil, err
-	}
-
-	uptime := parseInt64(strings.Split(string(uptimeFileBytes), " ")[0])
-
-	log.Debug().
-		Int64("uptime", uptime).
-		Msg("uptime")
-
 	procStatFileBytes, err := ioutil.ReadFile(path.Join("/proc", strconv.Itoa(pid), "stat"))
 
 	if err != nil {
@@ -355,21 +341,14 @@ func statFromProc(pid int) (*SysInfo, error) {
 		ExitCode:            parseInt64(infos[51]),
 	}
 
-	log.Debug().
-		Interface("pid-statistics", pidStatistics).
-		Msg("pid states")
-
-	total := (pidStatistics.Stime + pidStatistics.Utime) / clkTck
-	seconds := pidStatistics.Starttime - uptime
-
-	seconds = int64(math.Abs(float64(seconds)))
-
-	if seconds == 0 {
-		seconds = 1
+	if pidStatistics.Rss > 0 {
+		log.Debug().
+			Interface("pid-statistics", pidStatistics).
+			Msg("pid states")
 	}
 
 	return &SysInfo{
-		CPU:    (total / seconds) * 100,
+		CPU:    0,
 		Memory: memory.Memory(pidStatistics.Rss * PageSize),
 	}, nil
 }
