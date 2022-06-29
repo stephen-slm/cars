@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -119,13 +120,17 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 			default:
 			}
 
-			if state, err := pid.GetStat(cmd.Process.Pid); err == nil {
-				fmt.Printf("cpu %f - memory %dmb\n", state.CPU, state.Memory.Megabytes())
-				time.Sleep(5 * time.Millisecond)
+			state, err := pid.GetStat(cmd.Process.Pid)
 
-				if maxMemoryConsumption < state.Memory {
-					maxMemoryConsumption = state.Memory
-				}
+			if err != nil {
+				log.Error().Err(err).Msg("failed to get pid stats")
+			}
+
+			fmt.Printf("pid %d - cpu %f - memory %dmb\n", cmd.Process.Pid, state.CPU, state.Memory.Megabytes())
+			time.Sleep(10 * time.Millisecond)
+
+			if maxMemoryConsumption < state.Memory {
+				maxMemoryConsumption = state.Memory
 			}
 		}
 	}(waitNotification)
@@ -133,7 +138,10 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 	_ = cmd.Wait()
 	close(waitNotification)
 
-	fmt.Printf("max memory %dmb\n", maxMemoryConsumption.Megabytes())
+	execution := cmd.ProcessState.SysUsage().(*syscall.Rusage)
+
+	fmt.Printf("pid: %d - max memory %dmb\n", cmd.ProcessState.Pid(), memory.Memory(execution.Maxrss).Megabytes())
+	fmt.Printf("pid: %d - max memory %dmb\n", cmd.ProcessState.Pid(), maxMemoryConsumption.Megabytes())
 
 	// close the file after writing to allow full reading from the start
 	// current implementation does not allow writing and then reading from the

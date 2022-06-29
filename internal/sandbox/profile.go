@@ -57,7 +57,7 @@ var profiles = map[string]*Profile{
 		Runtime:        GVisor,
 	},
 	"development_windows": {
-		AutoRemove:     true,
+		AutoRemove:     false,
 		CodeTimeout:    time.Second * 5,
 		CompileTimeout: time.Second * 20,
 		Memory:         memory.Gigabyte * 10,

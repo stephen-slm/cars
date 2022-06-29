@@ -17,4 +17,5 @@ COPY --from=BUILDER /runner /runner
 RUN mkdir /project
 RUN cd /project && go mod init project
 
-RUN apk --update add coreutils
+RUN apt-get  update
+RUN apt-get install coreutils

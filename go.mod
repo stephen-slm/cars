@@ -56,6 +56,7 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
+	github.com/felixge/pidctrl v0.0.0-20160307080219-7b13bcae7243 // indirect
 	github.com/firefart/nonamedreturns v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/fzipp/gocyclo v0.5.1 // indirect
@@ -173,6 +174,7 @@ require (
 	github.com/stbenjam/no-sprintf-host-port v0.1.1 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.7.1 // indirect
+	github.com/struCoder/pidusage v0.2.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/sylvia7788/contextcheck v1.0.4 // indirect
 	github.com/tdakkota/asciicheck v0.1.1 // indirect
