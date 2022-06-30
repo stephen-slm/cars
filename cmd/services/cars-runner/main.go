@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"compile-and-run-sandbox/internal/memory"
@@ -18,7 +19,21 @@ import (
 	"compile-and-run-sandbox/internal/sandbox"
 )
 
+func determineExecutionError(err error) sandbox.ContainerStatus {
+	if errors.Is(err, memory.LimitExceeded) {
+		return sandbox.MemoryConstraintExceeded
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		return sandbox.TimeLimitExceeded
+	}
+
+	return sandbox.RunTimeError
+}
+
 func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (compilerOutput []string, compileTimeNano int64, err error) {
+	log.Info().Str("id", params.ID).Msg("compile start")
+
 	// this has to be defined here since we always want this total time
 	// and the total time is determined in to defer func.
 	var timeAtExecution time.Time
@@ -26,15 +41,18 @@ func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (c
 
 	hasSteps := len(params.CompileSteps) > 0
 
-	defer func() {
-		if hasSteps {
-			compileTimeNano = time.Since(timeAtExecution).Nanoseconds()
-		}
-	}()
-
 	if !hasSteps {
 		return
 	}
+
+	defer func() {
+		compileTimeNano = time.Since(timeAtExecution).Nanoseconds()
+
+		log.Info().
+			Str("id", params.ID).
+			Int64("duration", compileTimeNano).
+			Msg("completed compile project")
+	}()
 
 	ctx, cancel := context.WithTimeout(ctx, params.CompileTimeout)
 	defer cancel()
@@ -67,20 +85,27 @@ func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (c
 	return
 }
 
-type RunExuection struct {
-	standardOutput []string
-	errorOutput    []string
-	runtimeNano    int64
+type RunExecution struct {
+	standardOutput    []string
+	errorOutput       []string
+	runtimeNano       int64
+	memoryConsumption memory.Memory
 }
 
-func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunExuection, error) {
+func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunExecution, error) {
+	log.Info().Str("id", params.ID).Msg("run start")
+
 	// this has to be defined here since we always want this total time
 	// and the total time is determined in to defer func.
 	var timeAtExecution time.Time
-	resp := RunExuection{}
+	resp := RunExecution{}
 
 	defer func() {
 		resp.runtimeNano = time.Since(timeAtExecution).Nanoseconds()
+
+		log.Info().Str("id", params.ID).
+			Int64("duration", resp.runtimeNano).
+			Msg("run complete")
 	}()
 
 	ctx, cancel := context.WithTimeout(ctx, params.RunTimeout)
@@ -104,40 +129,54 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 	// execution channel used to determine when to stop reading memory
 	// information from the PID. Channel will be closed once the wait has
 	// completed fully.
-	waitNotification := make(chan any)
-
+	pidDone := make(chan any)
 	timeAtExecution = time.Now()
 
 	maxMemoryConsumption := memory.Byte
 	cmdErr := cmd.Start()
 
-	go func(ch <-chan any) {
-		for {
-			select {
-			case <-ch:
-				break
-			default:
-			}
+	go func() {
+		defer close(pidDone)
+		_ = cmd.Wait()
+	}()
 
-			state, err := pid.GetStat(cmd.Process.Pid)
+	pidStats := pid.StreamPid(pidDone, cmd.Process.Pid)
 
-			if err != nil {
-				log.Error().Err(err).Msg("failed to get pid stats")
-			}
+	sampleLogger := log.Sample(&zerolog.BurstSampler{
+		Burst:       5,
+		Period:      time.Millisecond * 25,
+		NextSampler: &zerolog.BasicSampler{N: 10},
+	})
 
-			fmt.Printf("pid %d - cpu %f - memory %dmb\n", cmd.Process.Pid, state.CPU, state.Memory.Megabytes())
-			time.Sleep(10 * time.Millisecond)
+	for state := range pidStats {
+		if maxMemoryConsumption < state.Memory {
+			resp.memoryConsumption = state.Memory
+			maxMemoryConsumption = state.Memory
 
-			if maxMemoryConsumption < state.Memory {
-				maxMemoryConsumption = state.Memory
+			sampleLogger.Debug().
+				Int("pid", cmd.Process.Pid).
+				Int64("memory-mb", maxMemoryConsumption.Megabytes()).
+				Int64("max-memory-mb", params.ExecutionMemory.Megabytes()).
+				Msg("state-metrics")
+
+			if state.Memory > params.ExecutionMemory {
+				log.Info().
+					Int("pid", cmd.Process.Pid).
+					Int64("memory-mb", maxMemoryConsumption.Megabytes()).
+					Int64("max-memory-mb", params.ExecutionMemory.Megabytes()).
+					Msg("state-metrics")
+
+				_ = cmd.Process.Kill()
+				return &resp, memory.LimitExceeded
 			}
 		}
-	}(waitNotification)
+	}
 
-	_ = cmd.Wait()
-	close(waitNotification)
-
-	fmt.Printf("pid: %d - max memory %dmb\n", cmd.ProcessState.Pid(), maxMemoryConsumption.Megabytes())
+	log.Info().
+		Int("pid", cmd.Process.Pid).
+		Int64("memory-mb", maxMemoryConsumption.Megabytes()).
+		Int64("max-memory-mb", params.ExecutionMemory.Megabytes()).
+		Msg("state-metrics")
 
 	// close the file after writing to allow full reading from the start
 	// current implementation does not allow writing and then reading from the
@@ -182,8 +221,10 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 		}
 	}
 
-	fmt.Println("outlines", outputLinesCount, outputLines)
-	fmt.Println("errLines", outputErrLinesCount, outputErrLines)
+	log.Debug().
+		Strs("outlines", outputLines).
+		Strs("errLines", outputErrLines).
+		Msg("output")
 
 	resp.standardOutput = outputLines
 	resp.errorOutput = outputErrLines
@@ -212,12 +253,16 @@ func main() {
 	var params sandbox.ExecutionParameters
 	_ = json.Unmarshal(fileBytes, &params)
 
+	log.Info().
+		Interface("request", &params).
+		Msg("executing incoming request")
+
 	responseCode := sandbox.Finished
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var runExecution = &RunExuection{}
+	var runExecution = &RunExecution{}
 	var compilerOutput []string
 	var compileTime int64
 	var compileErr, runtimeErr error
@@ -227,43 +272,31 @@ func main() {
 	compilerOutput, compileTime, compileErr = compileProject(ctx, &params)
 
 	if compileErr != nil {
-		log.Error().Err(compileErr).Object("request", &params).
-			Msg("error occurred when executing compile")
-
-		if errors.Is(compileErr, context.DeadlineExceeded) {
-			responseCode = sandbox.TimeLimitExceeded
-		} else {
-			responseCode = sandbox.CompilationFailed
-		}
+		log.Error().Err(compileErr).Msg("error occurred when executing compile")
+		responseCode = determineExecutionError(runtimeErr)
 	}
 
 	// output file for the actual execution
 	if responseCode == sandbox.Finished {
-
 		runExecution, runtimeErr = runProject(ctx, &params)
 
 		if runtimeErr != nil {
-			log.Error().Err(runtimeErr).
-				Object("request", &params).
-				Msg("error occurred when running code")
-
-			if errors.Is(runtimeErr, context.DeadlineExceeded) {
-				responseCode = sandbox.TimeLimitExceeded
-			} else {
-				responseCode = sandbox.RunTimeError
-			}
+			log.Error().Err(runtimeErr).Msg("error occurred when running code")
+			responseCode = determineExecutionError(runtimeErr)
 		}
 	}
 
-	resp, _ := json.MarshalIndent(sandbox.ExecutionResponse{
-		CompileTime:    compileTime,
-		CompilerOutput: compilerOutput,
-		Output:         runExecution.standardOutput,
-		Runtime:        runExecution.runtimeNano,
-		Status:         responseCode,
-	}, "", "\t")
+	executionResponse := sandbox.ExecutionResponse{
+		CompileTime:        compileTime,
+		CompilerOutput:     compilerOutput,
+		Output:             runExecution.standardOutput,
+		Runtime:            runExecution.runtimeNano,
+		RuntimeMemoryBytes: runExecution.memoryConsumption.Bytes(),
+		Status:             responseCode,
+	}
 
-	fmt.Printf("%s\n", resp)
+	log.Debug().Interface("response", &executionResponse).Msg("response")
+	resp, _ := json.MarshalIndent(executionResponse, "", "\t")
 
 	_ = os.WriteFile(fmt.Sprintf("/input/%s", "runner-out.json"), resp, os.ModePerm)
 }

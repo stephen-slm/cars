@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -31,6 +32,8 @@ type SysInfo struct {
 }
 
 type ProcPidState string
+
+const DEBUG = false
 
 const (
 	ProcPidRunning             ProcPidState = "R" // R  Running
@@ -279,11 +282,6 @@ func statFromProc(pid int) (*SysInfo, error) {
 		return nil, err
 	}
 
-	log.Debug().
-		Str("pid", strconv.Itoa(pid)).
-		Str("raw", string(procStatFileBytes)).
-		Msg("pid states")
-
 	infos := strings.Split(string(procStatFileBytes), " ")
 
 	pidStatistics := &ProcPidStatistics{
@@ -341,7 +339,7 @@ func statFromProc(pid int) (*SysInfo, error) {
 		ExitCode:            parseInt64(infos[51]),
 	}
 
-	if pidStatistics.Rss > 0 {
+	if pidStatistics.Rss > 0 && DEBUG {
 		log.Debug().
 			Interface("pid-statistics", pidStatistics).
 			Msg("pid states")
@@ -365,4 +363,33 @@ func stat(pid int, statType string) (*SysInfo, error) {
 // GetStat will return current system CPU and memory data
 func GetStat(pid int) (*SysInfo, error) {
 	return stat(pid, fnMapping[platform])
+}
+
+func StreamPid(done <-chan any, pid int) <-chan *SysInfo {
+	value := make(chan *SysInfo)
+
+	go func() {
+		defer close(value)
+
+		for {
+			state, err := GetStat(pid)
+
+			if err != nil {
+				log.Err(err).
+					Int("pid", pid).
+					Msg("failed to get stats for pid")
+				return
+			}
+
+			select {
+			case <-done:
+				return
+			case value <- state:
+			}
+
+			time.Sleep(10 * time.Millisecond)
+		}
+	}()
+
+	return value
 }

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/docker/docker/api/types"
@@ -20,6 +19,7 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
 
+	"compile-and-run-sandbox/internal/memory"
 	"compile-and-run-sandbox/internal/sandbox/unix"
 )
 
@@ -96,27 +96,23 @@ type Request struct {
 }
 
 type ExecutionParameters struct {
-	CompileSteps   []string      `json:"compileSteps"`
-	CompileTimeout time.Duration `json:"compileTimeoutSec"`
-	ID             string        `json:"id"`
-	Language       string        `json:"language"`
-	Run            string        `json:"runSteps"`
-	RunTimeout     time.Duration `json:"runTimeoutSec"`
-	StandardInput  string        `json:"standardInput"`
-}
-
-func (e2 *ExecutionParameters) MarshalZerologObject(e *zerolog.Event) {
-	e.Str("id", e2.ID).
-		Str("language", e2.Language).
-		Bool("compiled", len(e2.CompileSteps) > 0)
+	CompileSteps    []string      `json:"compileSteps"`
+	CompileTimeout  time.Duration `json:"compileTimeout"`
+	ID              string        `json:"ID"`
+	Language        string        `json:"language"`
+	Run             string        `json:"run"`
+	RunTimeout      time.Duration `json:"runTimeout"`
+	StandardInput   string        `json:"standardInput"`
+	ExecutionMemory memory.Memory `json:"executionMemory"`
 }
 
 type ExecutionResponse struct {
-	Runtime        int64           `json:"runTime"`
-	Status         ContainerStatus `json:"status"`
-	CompileTime    int64           `json:"compileTime"`
-	Output         []string        `json:"output"`
-	CompilerOutput []string        `json:"compilerOutput"`
+	CompileTime        int64           `json:"compileTime"`
+	CompilerOutput     []string        `json:"compilerOutput"`
+	Output             []string        `json:"output"`
+	Runtime            int64           `json:"runTime"`
+	RuntimeMemoryBytes int64           `json:"runtimeMemory"`
+	Status             ContainerStatus `json:"status"`
 }
 
 type Response struct {
@@ -131,6 +127,9 @@ type Response struct {
 
 	// The complete runtime of the container in milliseconds.
 	Runtime time.Duration
+
+	// The total memory used during runtime.
+	RuntimeMemory memory.Memory
 
 	// The complete compile time of the container in milliseconds (if not interpreter)
 	CompileTime time.Duration
@@ -233,13 +232,14 @@ func (d *Container) prepare(_ context.Context) error {
 	runnerConfig := filepath.Join(d.request.Path, "runner.json")
 
 	parameters := ExecutionParameters{
-		ID:             d.request.ID,
-		Language:       d.request.Compiler.Language,
-		RunTimeout:     d.request.ExecutionProfile.CodeTimeout,
-		CompileTimeout: d.request.ExecutionProfile.CompileTimeout,
-		StandardInput:  d.request.Compiler.InputFile,
-		CompileSteps:   d.request.Compiler.compileSteps,
-		Run:            d.request.Compiler.runSteps,
+		ID:              d.request.ID,
+		Language:        d.request.Compiler.Language,
+		RunTimeout:      d.request.ExecutionProfile.CodeTimeout,
+		CompileTimeout:  d.request.ExecutionProfile.CompileTimeout,
+		StandardInput:   d.request.Compiler.InputFile,
+		CompileSteps:    d.request.Compiler.compileSteps,
+		Run:             d.request.Compiler.runSteps,
+		ExecutionMemory: d.request.ExecutionProfile.ExecutionMemory,
 	}
 
 	runnerFile, runnerError := os.Create(runnerConfig)
@@ -284,7 +284,7 @@ func (d *Container) execute(ctx context.Context) error {
 			AutoRemove: d.request.ExecutionProfile.AutoRemove,
 			Binds:      []string{fmt.Sprintf("%s:/input", workingDirectory)},
 			Resources: container.Resources{
-				Memory:     d.request.ExecutionProfile.Memory.Bytes(),
+				Memory:     d.request.ExecutionProfile.ContainerMemory.Bytes(),
 				MemorySwap: d.request.ExecutionProfile.MemorySwap.Bytes(),
 			},
 		},
@@ -425,5 +425,6 @@ func (d *Container) GetResponse() *Response {
 		TestStatus:     testStatus,
 		Runtime:        time.Duration(d.executionResponse.Runtime) * time.Nanosecond,
 		CompileTime:    time.Duration(d.executionResponse.CompileTime) * time.Nanosecond,
+		RuntimeMemory:  memory.Memory(d.executionResponse.RuntimeMemoryBytes),
 	}
 }

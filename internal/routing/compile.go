@@ -135,12 +135,13 @@ func (h CompilerHandlers) HandleGetCompileResponse(w http.ResponseWriter, r *htt
 	}
 
 	resp := CompileInfoResponse{
-		Status:     execution.Status,
-		TestStatus: execution.TestStatus,
-		CompileMs:  execution.CompileMs,
-		Language:   execution.Language,
-		RuntimeMs:  execution.RuntimeMs,
-		Output:     "",
+		Status:          execution.Status,
+		TestStatus:      execution.TestStatus,
+		CompileMs:       execution.CompileMs,
+		Language:        execution.Language,
+		RuntimeMs:       execution.RuntimeMs,
+		RuntimeMemoryMb: execution.RuntimeMemoryMb,
+		Output:          "",
 	}
 
 	compiler := sandbox.Compilers[execution.Language]

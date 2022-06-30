@@ -23,9 +23,10 @@ type CompileInfoResponse struct {
 	Status     string `json:"status"`
 	TestStatus string `json:"test_status"`
 
-	CompileMs int64  `json:"compile_ms"`
-	RuntimeMs int64  `json:"runtime_ms"`
-	Language  string `json:"language"`
+	CompileMs       int64  `json:"compile_ms"`
+	RuntimeMs       int64  `json:"runtime_ms"`
+	RuntimeMemoryMb int64  `json:"runtime_memory_mb"`
+	Language        string `json:"language"`
 
 	Output         string `json:"output"`
 	CompilerOutput string `json:"compiler_output,omitempty"`

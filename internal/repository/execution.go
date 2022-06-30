@@ -11,8 +11,9 @@ type Execution struct {
 	Status     string
 	TestStatus string
 
-	CompileMs int64
-	RuntimeMs int64
+	CompileMs       int64
+	RuntimeMs       int64
+	RuntimeMemoryMb int64
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

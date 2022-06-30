@@ -36,7 +36,11 @@ type Profile struct {
 	// The maximum amount of memory the container can use. If you set this
 	// option, the minimum allowed value is 6m (6 megabytes). That is, you must
 	// set the value to at least 6 megabytes.
-	Memory memory.Memory
+	ContainerMemory memory.Memory
+	// The maximum amount of memory allowed to be used by the code execution.
+	// Ideally keep the container memory higher to allow the code to fully use
+	// its full range.
+	ExecutionMemory memory.Memory
 	// The amount of memory this container is allowed to swap to disk.
 	MemorySwap memory.Memory
 }
@@ -50,32 +54,36 @@ var _ = map[uint]*Profile{
 // Profiles is a list of all currently supported profiles in the system
 var profiles = map[string]*Profile{
 	"development_linux": {
-		AutoRemove:     true,
-		CodeTimeout:    time.Second * 5,
-		CompileTimeout: time.Second * 20,
-		Memory:         memory.Gigabyte * 10,
-		Runtime:        GVisor,
+		AutoRemove:      true,
+		CodeTimeout:     time.Second * 5,
+		CompileTimeout:  time.Second * 20,
+		ContainerMemory: memory.Gigabyte * 2,
+		ExecutionMemory: memory.Gigabyte,
+		Runtime:         GVisor,
 	},
 	"development_windows": {
-		AutoRemove:     false,
-		CodeTimeout:    time.Second * 5,
-		CompileTimeout: time.Second * 20,
-		Memory:         memory.Gigabyte * 10,
-		Runtime:        Default,
+		AutoRemove:      true,
+		CodeTimeout:     time.Second * 10,
+		CompileTimeout:  time.Second * 20,
+		ContainerMemory: memory.Gigabyte * 2,
+		ExecutionMemory: memory.Gigabyte,
+		Runtime:         Default,
 	},
 	"production": {
-		AutoRemove:     true,
-		CodeTimeout:    time.Second,
-		CompileTimeout: time.Second * 10,
-		Memory:         memory.Gigabyte,
-		Runtime:        GVisor,
+		AutoRemove:      true,
+		CodeTimeout:     time.Second,
+		CompileTimeout:  time.Second * 10,
+		ContainerMemory: memory.Gigabyte * 2,
+		ExecutionMemory: memory.Gigabyte,
+		Runtime:         GVisor,
 	},
 	"staging": {
-		AutoRemove:     true,
-		CodeTimeout:    time.Second * 2,
-		CompileTimeout: time.Second * 20,
-		Memory:         memory.Gigabyte * 2,
-		Runtime:        GVisor,
+		AutoRemove:      true,
+		CodeTimeout:     time.Second * 2,
+		CompileTimeout:  time.Second * 20,
+		ContainerMemory: memory.Gigabyte * 2,
+		ExecutionMemory: memory.Gigabyte,
+		Runtime:         GVisor,
 	},
 }
 

@@ -24,6 +24,7 @@ const state = {
 
     languageModes: document.getElementById("language-modes"),
     codeRuntimeMs: document.getElementById("code-runtime"),
+    codeRuntimeMemoryMb: document.getElementById("code-memory-runtime"),
     compilerRuntimeMs: document.getElementById("compiler-runtime"),
     codeStatus: document.getElementById("execution-status"),
     codeTestStatus: document.getElementById("execution-test-status"),
@@ -91,6 +92,7 @@ function writeCompileStatusOutputToDisplay(output) {
 
     state.compilerRuntimeMs.innerText = output["compile_ms"] || "0"
     state.codeRuntimeMs.innerText = output["runtime_ms"] || "0"
+    state.codeRuntimeMemoryMb.innerText = output["runtime_memory_mb"] || "0"
     state.codeStatus.innerText = output.status
     state.codeTestStatus.innerText = output["test_status"]
 
