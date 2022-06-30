@@ -128,7 +128,23 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 
 	_ = repo.UpdateExecutionStatus(compileMsg.ID, sandbox.Running.String())
 
-	<-complete
+	// this needs a timeout otherwise It's going to continue until the container
+	// has run too long. It's probably something that should happen inside the
+	// manager to close this after failure but for now lets just timeout after
+	// a selective amount of time.
+	maxTimeout := sandboxRequest.ExecutionProfile.CodeTimeout +
+		sandboxRequest.ExecutionProfile.CompileTimeout
+
+	select {
+	case <-complete:
+	case <-time.After(maxTimeout):
+		log.Error().
+			Str("id", containerID).
+			Dur("duration", maxTimeout).
+			Msg("entire container execution timeout")
+
+		return nil
+	}
 
 	resp := manager.GetResponse(ctx, containerID)
 
@@ -152,10 +168,11 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 	_ = manager.RemoveContainer(context.Background(), containerID, false)
 
 	_, _ = repo.UpdateExecution(compileMsg.ID, &repository.Execution{
-		Status:     resp.Status.String(),
-		TestStatus: resp.TestStatus.String(),
-		CompileMs:  resp.CompileTime.Milliseconds(),
-		RuntimeMs:  resp.Runtime.Milliseconds(),
+		Status:          resp.Status.String(),
+		TestStatus:      resp.TestStatus.String(),
+		CompileMs:       resp.CompileTime.Milliseconds(),
+		RuntimeMs:       resp.Runtime.Milliseconds(),
+		RuntimeMemoryMb: resp.RuntimeMemory.Megabytes(),
 	})
 
 	return nil
