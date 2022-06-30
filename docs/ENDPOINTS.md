@@ -77,6 +77,7 @@ Example: `GET - /compile/56ea6176-d23f-4561-b937-b16c6a8434ef`
   "test_status": "string",
   "compile_ms": 0,
   "runtime_ms": 0,
+  "runtime_memory_mb": 0,
   "language": "string",
   "output": "string"
 }
