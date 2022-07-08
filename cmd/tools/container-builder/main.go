@@ -41,34 +41,26 @@ func main() {
 			log.Fatalf("language '%s' does not exist in supported compilers\n", filterName)
 		}
 
-		if c.Compiler != "" {
-			runDockerCommand(filterName, c.Compiler, verbose)
-		} else {
-			runDockerCommand(filterName, filterName, verbose)
-		}
-
+		runDockerCommand(c, verbose)
 		return
 	}
 
 	completed := map[string]bool{}
 
-	for langRef, c := range sandbox.Compilers {
+	for _, c := range sandbox.Compilers {
 		if _, ok := completed[c.VirtualMachineName]; ok {
 			continue
 		}
 
-		dockerFilePrefix := strings.Split(c.VirtualMachineName, "_")[2]
-		runDockerCommand(langRef, dockerFilePrefix, verbose)
+		runDockerCommand(c, verbose)
 	}
 }
 
-func runDockerCommand(lang string, name string, verbose bool) {
-	fmt.Printf("%sRunning language:%s %s%s%s\n", RED, ENDCOLOR, GREEN, lang, ENDCOLOR)
+func runDockerCommand(compiler *sandbox.LanguageCompiler, verbose bool) {
+	fmt.Printf("%sRunning language:%s %s%s%s\n", RED, ENDCOLOR, GREEN, compiler.Language, ENDCOLOR)
 
-	path := fmt.Sprintf("./build/dockerfiles/%s.dockerfile", name)
-	machineName := fmt.Sprintf("virtual_machine_%s", name)
-
-	cmd := exec.Command("docker", "build", "-f", path, "-t", machineName)
+	path := fmt.Sprintf("./build/dockerfiles/%s.dockerfile", strings.ToLower(compiler.Dockerfile))
+	cmd := exec.Command("docker", "build", "-f", path, "-t", compiler.VirtualMachineName)
 
 	cmd.Stdout = nil
 	cmd.Stderr = os.Stderr
@@ -84,5 +76,5 @@ func runDockerCommand(lang string, name string, verbose bool) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%sFinished language:%s %s%s%s\n", RED, ENDCOLOR, GREEN, lang, ENDCOLOR)
+	fmt.Printf("%sFinished language:%s %s%s%s\n", RED, ENDCOLOR, GREEN, compiler.Language, ENDCOLOR)
 }

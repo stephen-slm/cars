@@ -8,77 +8,96 @@ import (
 )
 
 type LanguageCompiler struct {
-	// The language that the given compilerName is going to be using or not. This can be seen as the kind
-	// of code that is going to be executed by the requesting machine. e.g Python, Node, JavaScript,
-	// C++.
+	// The language that the given compilerName is going to be using or not.
+	// This can be seen as the kind of code that is going to be executed by
+	// the requesting machine. e.g Python, Node, JavaScript, C++.
 	Language string
+	// The prefix for the related docker image used for building.
+	Dockerfile string
 	// The name of the compiler.
 	Compiler string
-	// The name of the compiler used in the steps, this is not including the actions which
-	// are used to perform the compilation and running.
+	// The name of the compiler used in the steps, this is not including the
+	// actions which are used to perform the compilation and running.
 	runSteps string
-	// The steps used to compile the application, these are skipped if interpreter is true.
+	// The steps used to compile the application, these are skipped if
+	// interpreter is true.
 	compileSteps []string
-	// If the given compilerName is an interpreter or not, since based on this action we would need to
-	// create additional steps for compiling to a file if not.
+	// If the given compilerName is an interpreter or not, since based on this
+	// action we would need to create additional steps for compiling to a file
+	// if not.
 	Interpreter bool
-	// This is the name of docker image that will be executed for the given code sample, this will
-	// be the container that will be used for just this language. Most likely virtual_machine_language,
+	// This is the name of docker image that will be executed for the given code
+	// sample, this will be the container that will be used for just this
+	// language. Most likely virtual_machine_language,
 	// e.g. virtual_machine_python.
 	VirtualMachineName string
 	SourceFile         string
-	//  The file in which the given compilerName will be writing too (standard output and error out),
-	//  since this file will be read when the response returned to the user.
-	OutputFile         string
+	// The file in which the given compiler will be writing too (standard
+	// output), since this file will be read when the response returned to the
+	// user.
+	OutputFile string
+	// The file in which the given compiler will be writing too (error output),
+	// since this file will be read when the response returned to the user.
+	OutputErrFile string
+
 	CompilerOutputFile string
 	InputFile          string
 }
 
 var Compilers = map[string]*LanguageCompiler{
 	"python2": {
+		Dockerfile:         "python2",
 		Language:           "Python 2 (pypy)",
 		runSteps:           "pypy /input/solution.py",
 		Interpreter:        true,
 		VirtualMachineName: "virtual_machine_python2",
 		SourceFile:         "solution.py",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"python": {
+		Dockerfile:         "python",
 		Language:           "Python (pypy)",
 		runSteps:           "pypy /input/solution.py",
 		Interpreter:        true,
 		VirtualMachineName: "virtual_machine_python",
 		SourceFile:         "solution.py",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"node": {
+		Dockerfile:         "node",
 		Language:           "NodeJs (Javascript)",
 		runSteps:           "node /input/solution.js",
 		Interpreter:        true,
 		VirtualMachineName: "virtual_machine_node",
 		SourceFile:         "solution.js",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"ruby": {
+		Dockerfile:         "ruby",
 		Language:           "Ruby",
 		runSteps:           "ruby /input/solution.rb",
 		Interpreter:        true,
 		VirtualMachineName: "virtual_machine_ruby",
 		SourceFile:         "solution.rb",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"rust": {
-		Compiler: "rustc",
-		Language: "Rust",
-		runSteps: "/solution",
+		Dockerfile: "rust",
+		Compiler:   "rustc",
+		Language:   "Rust",
+		runSteps:   "/solution",
 		compileSteps: []string{
 			"rustc -o /solution /input/solution.rs",
 		},
@@ -86,13 +105,15 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_rust",
 		SourceFile:         "solution.rs",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"go": {
-		Compiler: "go",
-		Language: "Golang",
-		runSteps: "/solution",
+		Dockerfile: "go",
+		Compiler:   "go",
+		Language:   "Golang",
+		runSteps:   "/solution",
 		compileSteps: []string{
 			"cp /input/solution.go /project/main.go",
 			"go build -o /solution /project/main.go",
@@ -101,13 +122,15 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_go",
 		SourceFile:         "solution.go",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"haskell": {
-		Compiler: "ghc",
-		Language: "Haskell",
-		runSteps: "/solution",
+		Dockerfile: "haskell",
+		Compiler:   "ghc",
+		Language:   "Haskell",
+		runSteps:   "/solution",
 		compileSteps: []string{
 			"ghc -o /solution /input/solution.hs",
 		},
@@ -115,13 +138,15 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_haskell",
 		SourceFile:         "solution.hs",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"c": {
-		Compiler: "gcc",
-		Language: "C",
-		runSteps: "/solution",
+		Dockerfile: "gcc",
+		Compiler:   "gcc",
+		Language:   "C",
+		runSteps:   "/solution",
 		compileSteps: []string{
 			"gcc -g -O2 -std=gnu11 -static -o /solution /input/solution.c -lm",
 		},
@@ -129,13 +154,15 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_gcc",
 		SourceFile:         "solution.c",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"cpp": {
-		Compiler: "gcc",
-		Language: "C++",
-		runSteps: "/solution",
+		Dockerfile: "gcc",
+		Compiler:   "gcc",
+		Language:   "C++",
+		runSteps:   "/solution",
 		compileSteps: []string{
 			"g++ -g -O2 -std=gnu++17 -static -lrt -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -o /solution /input/solution.cpp",
 		},
@@ -143,13 +170,15 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_gcc",
 		SourceFile:         "solution.cpp",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"fsharp": {
-		Compiler: "dotnet6",
-		Language: "F#",
-		runSteps: "/build-output/projectf",
+		Dockerfile: "dotnet6",
+		Compiler:   "dotnet6",
+		Language:   "F#",
+		runSteps:   "/build-output/projectf",
 		compileSteps: []string{
 			"cp /input/solution.fs /projectf/Program.fs",
 			"dotnet build --configuration Release -o /build-output/ /projectf/",
@@ -158,13 +187,15 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_dotnet6",
 		SourceFile:         "solution.fs",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"csharp": {
-		Compiler: "dotnet6",
-		Language: "C#",
-		runSteps: "/build-output/projectc",
+		Dockerfile: "dotnet6",
+		Compiler:   "dotnet6",
+		Language:   "C#",
+		runSteps:   "/build-output/projectc",
 		compileSteps: []string{
 			"cp /input/solution.cs /projectc/Program.cs",
 			"dotnet build --configuration Release -o /build-output/ /projectc/",
@@ -173,6 +204,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_dotnet6",
 		SourceFile:         "solution.cs",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -181,9 +213,10 @@ var Compilers = map[string]*LanguageCompiler{
 	// solution class which is required for execution. If they change the Solution class
 	// name the project will fail to compile.
 	"java": {
-		Compiler: "openjdk",
-		Language: "Java",
-		runSteps: "java -cp . Solution",
+		Dockerfile: "openjdk",
+		Compiler:   "openjdk",
+		Language:   "Java",
+		runSteps:   "java -cp . Solution",
 		compileSteps: []string{
 			"javac /input/Solution.java",
 		},
@@ -191,13 +224,15 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_openjdk",
 		SourceFile:         "Solution.java",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"scala": {
-		Compiler: "openjdk",
-		Language: "Scala",
-		runSteps: "/scala -cp . Solution",
+		Dockerfile: "openjdk",
+		Compiler:   "openjdk",
+		Language:   "Scala",
+		runSteps:   "/scala -cp . Solution",
 		compileSteps: []string{
 			"/scalac /input/Solution.scala",
 		},
@@ -205,13 +240,15 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_openjdk",
 		SourceFile:         "Solution.scala",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
 	"kotlin": {
-		Compiler: "openjdk",
-		Language: "Kotlin",
-		runSteps: "java -jar /solution.jar",
+		Dockerfile: "openjdk",
+		Compiler:   "openjdk",
+		Language:   "Kotlin",
+		runSteps:   "java -jar /solution.jar",
 		compileSteps: []string{
 			"/kotlinc solution.kt -include-runtime -d /solution.jar",
 		},
@@ -219,6 +256,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_openjdk",
 		SourceFile:         "solution.kt",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},

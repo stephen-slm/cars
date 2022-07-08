@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog"
-
 	"compile-and-run-sandbox/internal/config"
 	"compile-and-run-sandbox/internal/files"
 	"compile-and-run-sandbox/internal/parser"
@@ -36,8 +34,6 @@ func getTranslator() ut.Translator {
 }
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
 	log.Info().Msg("starting cars-api")
 	args := parser.ParseDefaultConfigurationArguments()
 

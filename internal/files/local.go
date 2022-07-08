@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 type LocalFiles struct {
@@ -26,6 +27,12 @@ func newLocalFiles(config *LocalConfig) (LocalFiles, error) {
 }
 
 func (l LocalFiles) WriteFile(file *File) error {
+	log.Debug().
+		Str("id", file.ID).
+		Str("name", file.Name).
+		Str("data", string(file.Data)).
+		Msg("writing file locally")
+
 	folderDirectory := filepath.Join(l.config.LocalRootPath, file.ID)
 	filePath := filepath.Join(folderDirectory, file.Name)
 
