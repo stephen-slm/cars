@@ -84,7 +84,7 @@ function clearAllOutput() {
 function writeCompileStatusOutputToDisplay(output) {
     console.log(JSON.stringify(output, null, 2))
 
-    let outputContent = output["output"] || ""
+    let outputContent = `${output["output"] || ""}\n----\n${output["output_error"]}`
 
     if (!isFinishingStatus(output.status)) {
         outputContent = `${state.outputDiv.innerText}${output.status}...\n`

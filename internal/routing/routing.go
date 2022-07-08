@@ -29,6 +29,7 @@ type CompileInfoResponse struct {
 	Language        string `json:"language"`
 
 	Output         string `json:"output"`
+	OutputErr      string `json:"output_error"`
 	CompilerOutput string `json:"compiler_output,omitempty"`
 }
 

@@ -110,6 +110,7 @@ type ExecutionResponse struct {
 	CompileTime        int64           `json:"compileTime"`
 	CompilerOutput     []string        `json:"compilerOutput"`
 	Output             []string        `json:"output"`
+	OutputErr          []string        `json:"output_error"`
 	Runtime            int64           `json:"runTime"`
 	RuntimeMemoryBytes int64           `json:"runtimeMemory"`
 	Status             ContainerStatus `json:"status"`
@@ -119,8 +120,13 @@ type Response struct {
 	// The raw output that was produced by the sandbox compiler running.
 	CompilerOutput []string
 
-	// The raw output that was produced by the sandbox.
+	// The raw output written into the stdout for the sandbox. This has a hard
+	// limit of a given number of characters.
 	Output []string
+
+	// The raw output written into the stderr for the sandbox. This has a hard
+	// limit of a given number of characters.
+	OutputError []string
 
 	// The given status of the sandbox.
 	Status ContainerStatus
@@ -421,6 +427,7 @@ func (d *Container) GetResponse() *Response {
 	return &Response{
 		CompilerOutput: d.executionResponse.CompilerOutput,
 		Output:         d.executionResponse.Output,
+		OutputError:    d.executionResponse.OutputErr,
 		Status:         d.executionResponse.Status,
 		TestStatus:     testStatus,
 		Runtime:        time.Duration(d.executionResponse.Runtime) * time.Nanosecond,

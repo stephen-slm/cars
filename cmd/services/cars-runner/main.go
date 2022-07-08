@@ -290,6 +290,7 @@ func main() {
 		CompileTime:        compileTime,
 		CompilerOutput:     compilerOutput,
 		Output:             runExecution.standardOutput,
+		OutputErr:          runExecution.errorOutput,
 		Runtime:            runExecution.runtimeNano,
 		RuntimeMemoryBytes: runExecution.memoryConsumption.Bytes(),
 		Status:             responseCode,

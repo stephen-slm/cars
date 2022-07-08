@@ -63,7 +63,7 @@ var profiles = map[string]*Profile{
 	},
 	"development_windows": {
 		AutoRemove:      true,
-		CodeTimeout:     time.Second * 10,
+		CodeTimeout:     time.Second * 5,
 		CompileTimeout:  time.Second * 20,
 		ContainerMemory: memory.Gigabyte * 2,
 		ExecutionMemory: memory.Gigabyte,

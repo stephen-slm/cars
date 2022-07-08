@@ -152,6 +152,10 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 		ID:   sandboxRequest.ID,
 		Name: compiler.OutputFile,
 		Data: []byte(strings.Join(resp.Output, "\n")),
+	}, {
+		ID:   sandboxRequest.ID,
+		Name: compiler.OutputErrFile,
+		Data: []byte(strings.Join(resp.OutputError, "\n")),
 	}}
 
 	if !sandboxRequest.Compiler.Interpreter {
@@ -160,7 +164,6 @@ func handleNewCompileRequest(data []byte, manager *sandbox.ContainerManager, rep
 			Name: compiler.CompilerOutputFile,
 			Data: []byte(strings.Join(resp.CompilerOutput, "\n")),
 		})
-
 	}
 
 	_ = fileHandler.WriteFiles(uploadFiles...)

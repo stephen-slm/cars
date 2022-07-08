@@ -8,30 +8,38 @@ import (
 )
 
 type LanguageCompiler struct {
-	// The language that the given compilerName is going to be using or not. This can be seen as the kind
-	// of code that is going to be executed by the requesting machine. e.g Python, Node, JavaScript,
-	// C++.
+	// The language that the given compilerName is going to be using or not.
+	// This can be seen as the kind of code that is going to be executed by
+	// the requesting machine. e.g Python, Node, JavaScript, C++.
 	Language string
 	// The prefix for the related docker image used for building.
 	Dockerfile string
 	// The name of the compiler.
 	Compiler string
-	// The name of the compiler used in the steps, this is not including the actions which
-	// are used to perform the compilation and running.
+	// The name of the compiler used in the steps, this is not including the
+	// actions which are used to perform the compilation and running.
 	runSteps string
-	// The steps used to compile the application, these are skipped if interpreter is true.
+	// The steps used to compile the application, these are skipped if
+	// interpreter is true.
 	compileSteps []string
-	// If the given compilerName is an interpreter or not, since based on this action we would need to
-	// create additional steps for compiling to a file if not.
+	// If the given compilerName is an interpreter or not, since based on this
+	// action we would need to create additional steps for compiling to a file
+	// if not.
 	Interpreter bool
-	// This is the name of docker image that will be executed for the given code sample, this will
-	// be the container that will be used for just this language. Most likely virtual_machine_language,
+	// This is the name of docker image that will be executed for the given code
+	// sample, this will be the container that will be used for just this
+	// language. Most likely virtual_machine_language,
 	// e.g. virtual_machine_python.
 	VirtualMachineName string
 	SourceFile         string
-	//  The file in which the given compilerName will be writing too (standard output and error out),
-	//  since this file will be read when the response returned to the user.
-	OutputFile         string
+	// The file in which the given compiler will be writing too (standard
+	// output), since this file will be read when the response returned to the
+	// user.
+	OutputFile string
+	// The file in which the given compiler will be writing too (error output),
+	// since this file will be read when the response returned to the user.
+	OutputErrFile string
+
 	CompilerOutputFile string
 	InputFile          string
 }
@@ -45,6 +53,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_python2",
 		SourceFile:         "solution.py",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -56,6 +65,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_python",
 		SourceFile:         "solution.py",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -67,6 +77,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_node",
 		SourceFile:         "solution.js",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -78,6 +89,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_ruby",
 		SourceFile:         "solution.rb",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -93,6 +105,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_rust",
 		SourceFile:         "solution.rs",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -109,6 +122,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_go",
 		SourceFile:         "solution.go",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -124,6 +138,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_haskell",
 		SourceFile:         "solution.hs",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -139,6 +154,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_gcc",
 		SourceFile:         "solution.c",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -154,6 +170,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_gcc",
 		SourceFile:         "solution.cpp",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -170,6 +187,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_dotnet6",
 		SourceFile:         "solution.fs",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -186,6 +204,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_dotnet6",
 		SourceFile:         "solution.cs",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -205,6 +224,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_openjdk",
 		SourceFile:         "Solution.java",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -220,6 +240,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_openjdk",
 		SourceFile:         "Solution.scala",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
@@ -235,6 +256,7 @@ var Compilers = map[string]*LanguageCompiler{
 		VirtualMachineName: "virtual_machine_openjdk",
 		SourceFile:         "solution.kt",
 		OutputFile:         "output",
+		OutputErrFile:      "output_error",
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},

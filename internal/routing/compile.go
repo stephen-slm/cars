@@ -142,17 +142,23 @@ func (h CompilerHandlers) HandleGetCompileResponse(w http.ResponseWriter, r *htt
 		RuntimeMs:       execution.RuntimeMs,
 		RuntimeMemoryMb: execution.RuntimeMemoryMb,
 		Output:          "",
+		OutputErr:       "",
 	}
 
 	compiler := sandbox.Compilers[execution.Language]
 
 	if data, outputErr := h.FileHandler.GetFile(parsedIDValue.String(), compiler.OutputFile); outputErr == nil {
-		log.Info().Str("data", string(data)).Msg("data")
+		log.Debug().Str("data", string(data)).Msg("data")
 		resp.Output = string(data)
 	}
 
+	if data, outputErr := h.FileHandler.GetFile(parsedIDValue.String(), compiler.OutputErrFile); outputErr == nil {
+		log.Debug().Str("data", string(data)).Msg("data")
+		resp.OutputErr = string(data)
+	}
+
 	if data, outputErr := h.FileHandler.GetFile(parsedIDValue.String(), compiler.CompilerOutputFile); outputErr == nil {
-		log.Info().Str("data", string(data)).Msg("data")
+		log.Debug().Str("data", string(data)).Msg("data")
 		resp.CompilerOutput = string(data)
 	}
 
