@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -50,7 +51,7 @@ func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (c
 
 		log.Info().
 			Str("id", params.ID).
-			Int64("duration", compileTimeNano).
+			Int64("compile-duration-nano", compileTimeNano).
 			Msg("completed compile project")
 	}()
 
@@ -98,13 +99,15 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 	// this has to be defined here since we always want this total time
 	// and the total time is determined in to defer func.
 	var timeAtExecution time.Time
-	resp := RunExecution{}
+	resp := RunExecution{
+		memoryConsumption: memory.Byte,
+	}
 
 	defer func() {
 		resp.runtimeNano = time.Since(timeAtExecution).Nanoseconds()
 
 		log.Info().Str("id", params.ID).
-			Int64("duration", resp.runtimeNano).
+			Int64("runtime-duration-nano", resp.runtimeNano).
 			Msg("run complete")
 	}()
 
@@ -132,7 +135,6 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 	pidDone := make(chan any)
 	timeAtExecution = time.Now()
 
-	maxMemoryConsumption := memory.Byte
 	cmdErr := cmd.Start()
 
 	go func() {
@@ -149,21 +151,20 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 	})
 
 	for state := range pidStats {
-		if maxMemoryConsumption < state.Memory {
+		if state.Memory > resp.memoryConsumption {
 			resp.memoryConsumption = state.Memory
-			maxMemoryConsumption = state.Memory
 
 			sampleLogger.Debug().
 				Int("pid", cmd.Process.Pid).
-				Int64("memory-mb", maxMemoryConsumption.Megabytes()).
-				Int64("max-memory-mb", params.ExecutionMemory.Megabytes()).
+				Float64("memory-mb", resp.memoryConsumption.Megabytes()).
+				Float64("max-memory-mb", params.ExecutionMemory.Megabytes()).
 				Msg("state-metrics")
 
-			if state.Memory > params.ExecutionMemory {
+			if resp.memoryConsumption > params.ExecutionMemory {
 				log.Info().
 					Int("pid", cmd.Process.Pid).
-					Int64("memory-mb", maxMemoryConsumption.Megabytes()).
-					Int64("max-memory-mb", params.ExecutionMemory.Megabytes()).
+					Float64("memory-mb", resp.memoryConsumption.Megabytes()).
+					Float64("max-memory-mb", params.ExecutionMemory.Megabytes()).
 					Msg("state-metrics")
 
 				_ = cmd.Process.Kill()
@@ -172,11 +173,26 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 		}
 	}
 
+	maxRss := cmd.ProcessState.SysUsage().(*syscall.Rusage).Maxrss * 1024
+	maxMemory := memory.Memory(maxRss)
+
 	log.Info().
 		Int("pid", cmd.Process.Pid).
-		Int64("memory-mb", maxMemoryConsumption.Megabytes()).
-		Int64("max-memory-mb", params.ExecutionMemory.Megabytes()).
+		Float64("pid-max-memory-mb", resp.memoryConsumption.Megabytes()).
+		Float64("container-max-memory-mb", params.ExecutionMemory.Megabytes()).
+		Float64("process-state-max-memory-mb", maxMemory.Megabytes()).
 		Msg("state-metrics")
+
+	if maxMemory > resp.memoryConsumption {
+		resp.memoryConsumption = maxMemory
+	}
+
+	// last check for being over the memory limit, this can catch anything that
+	// happened after the final recording but the cmd process managed to get
+	// determine a higher value.
+	if resp.memoryConsumption > params.ExecutionMemory {
+		return &resp, memory.LimitExceeded
+	}
 
 	// close the file after writing to allow full reading from the start
 	// current implementation does not allow writing and then reading from the

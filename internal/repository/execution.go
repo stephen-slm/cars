@@ -13,7 +13,7 @@ type Execution struct {
 
 	CompileMs       int64
 	RuntimeMs       int64
-	RuntimeMemoryMb int64
+	RuntimeMemoryMb float64
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

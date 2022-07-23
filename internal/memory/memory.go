@@ -9,13 +9,10 @@ const (
 	Gigabyte        = 1024 * Megabyte
 )
 
-func (d Memory) Bytes() int64 { return int64(d) }
-
-func (d Memory) Kilobytes() int64 { return int64(d) / int64(Kilobyte) }
-
-func (d Memory) Megabytes() int64 { return int64(d) / int64(Megabyte) }
-
-func (d Memory) Gigabytes() int64 { return int64(d) / int64(Gigabyte) }
+func (d Memory) Bytes() int64       { return int64(d) }
+func (d Memory) Kilobytes() float64 { return float64(d) / float64(Kilobyte) }
+func (d Memory) Megabytes() float64 { return float64(d) / float64(Megabyte) }
+func (d Memory) Gigabytes() float64 { return float64(d) / float64(Gigabyte) }
 
 // LimitExceeded is the error returned by the runner if and when the total
 // allocated memory has been exceeded.
