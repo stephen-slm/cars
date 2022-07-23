@@ -216,7 +216,7 @@ var Compilers = map[string]*LanguageCompiler{
 		Dockerfile: "openjdk",
 		Compiler:   "openjdk",
 		Language:   "Java",
-		runSteps:   "java -cp . Solution",
+		runSteps:   "java -Xmx2048m -cp . Solution",
 		compileSteps: []string{
 			"javac /input/Solution.java",
 		},
@@ -232,7 +232,7 @@ var Compilers = map[string]*LanguageCompiler{
 		Dockerfile: "openjdk",
 		Compiler:   "openjdk",
 		Language:   "Scala",
-		runSteps:   "/scala -cp . Solution",
+		runSteps:   "/scala -J-Xmx2048m -cp . Solution",
 		compileSteps: []string{
 			"/scalac /input/Solution.scala",
 		},
@@ -248,7 +248,7 @@ var Compilers = map[string]*LanguageCompiler{
 		Dockerfile: "openjdk",
 		Compiler:   "openjdk",
 		Language:   "Kotlin",
-		runSteps:   "java -jar /solution.jar",
+		runSteps:   "java -Xmx2048m -jar /solution.jar",
 		compileSteps: []string{
 			"/kotlinc solution.kt -include-runtime -d /solution.jar",
 		},
