@@ -1,4 +1,4 @@
-FROM golang:1.18 as BUILDER
+FROM golang:1.18-buster as BUILDER
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM haskell:9-slim
+FROM haskell:9-buster
 
 COPY --from=BUILDER /runner /runner
 RUN apt-get install coreutils

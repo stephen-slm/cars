@@ -339,7 +339,7 @@ func statFromProc(pid int) (*SysInfo, error) {
 		ExitCode:            parseInt64(infos[51]),
 	}
 
-	if pidStatistics.Rss > 0 && DEBUG {
+	if pidStatistics.Rss >= 0 && DEBUG {
 		log.Debug().
 			Interface("pid-statistics", pidStatistics).
 			Msg("pid states")
@@ -378,7 +378,13 @@ func StreamPid(done <-chan any, pid int) <-chan *SysInfo {
 				log.Err(err).
 					Int("pid", pid).
 					Msg("failed to get stats for pid")
-				return
+
+				select {
+				case <-done:
+					return
+				default:
+					continue
+				}
 			}
 
 			select {
@@ -387,7 +393,7 @@ func StreamPid(done <-chan any, pid int) <-chan *SysInfo {
 			case value <- state:
 			}
 
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(time.Millisecond * 10)
 		}
 	}()
 
