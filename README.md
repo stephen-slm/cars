@@ -45,9 +45,9 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 | Language | Version      | Url                          | Time | Memory |
 |----------|--------------|------------------------------|------|--------|
 | C        | GCC V12      | https://gcc.gnu.org          | ✔️   | ❌      |
-| C#       | .NET 6.0     | https://dotnet.microsoft.com | ✔️   | ❌      |
+| C#       | .NET 6.0     | https://dotnet.microsoft.com | ✔️   | ✔️      |
 | C++      | GCC V12      | https://gcc.gnu.org          | ✔️   | ❌      |
-| F#       | .NET 6.0     | https://dotnet.microsoft.com | ✔️   | ❌      |
+| F#       | .NET 6.0     | https://dotnet.microsoft.com | ✔️   | ✔️      |
 | Go       | 1.18.x       | https://go.dev               | ✔️   | ✔️     |
 | Haskell  | 9.x.x        | https://haskell.org          | ✔️   | ❌      |
 | Java     | OpenJDK 18.0 | https://openjdk.java.net     | ✔️   | ❌      |
