@@ -19,7 +19,7 @@ require (
 	github.com/rs/zerolog v1.26.1
 	golang.org/x/tools v0.1.11-0.20220316014157-77aa08bb151a
 	gorm.io/driver/postgres v1.3.7
-	gorm.io/gorm v1.23.5
+	gorm.io/gorm v1.23.8
 )
 
 require (
