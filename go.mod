@@ -18,7 +18,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.27.0
 	golang.org/x/tools v0.1.12
-	gorm.io/driver/postgres v1.3.7
+	gorm.io/driver/postgres v1.3.9
 	gorm.io/gorm v1.23.8
 )
 
