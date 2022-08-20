@@ -173,18 +173,20 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 		}
 	}
 
-	maxRss := cmd.ProcessState.SysUsage().(*syscall.Rusage).Maxrss * 1024
-	maxMemory := memory.Memory(maxRss)
+	finalProcessMaxMemory := memory.Byte
+	if systemUsage, ok := cmd.ProcessState.SysUsage().(*syscall.Rusage); ok {
+		finalProcessMaxMemory = memory.Memory(systemUsage.Maxrss * 1024)
+	}
 
 	log.Info().
 		Int("pid", cmd.Process.Pid).
 		Float64("pid-max-memory-mb", resp.memoryConsumption.Megabytes()).
 		Float64("container-max-memory-mb", params.ExecutionMemory.Megabytes()).
-		Float64("process-state-max-memory-mb", maxMemory.Megabytes()).
+		Float64("process-state-max-memory-mb", finalProcessMaxMemory.Megabytes()).
 		Msg("state-metrics")
 
-	if maxMemory > resp.memoryConsumption {
-		resp.memoryConsumption = maxMemory
+	if finalProcessMaxMemory > resp.memoryConsumption {
+		resp.memoryConsumption = finalProcessMaxMemory
 	}
 
 	// last check for being over the memory limit, this can catch anything that
@@ -215,7 +217,7 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 
 	for scanner.Scan() {
 		outputLines = append(outputLines, scanner.Text())
-		outputLinesCount += 1
+		outputLinesCount++
 
 		if outputLinesCount >= 1_000 {
 			break
@@ -230,7 +232,7 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 
 	for scanner.Scan() {
 		outputErrLines = append(outputErrLines, scanner.Text())
-		outputErrLinesCount += 1
+		outputErrLinesCount++
 
 		if outputErrLinesCount >= 1_000 {
 			break

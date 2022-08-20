@@ -22,8 +22,8 @@ type File struct {
 // newLocalFiles is the local handler used during development to
 // write the source code and output files to disk instead of a S3 bucket
 // or another location.
-func newLocalFiles(config *LocalConfig) (LocalFiles, error) {
-	return LocalFiles{config: config}, nil
+func newLocalFiles(config *LocalConfig) LocalFiles {
+	return LocalFiles{config: config}
 }
 
 func (l LocalFiles) WriteFile(file *File) error {

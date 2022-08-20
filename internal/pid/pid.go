@@ -7,7 +7,7 @@ package pid
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
 	"runtime"
@@ -227,6 +227,7 @@ var platform = runtime.GOOS
 var eol = "\n"
 
 // Linux platform
+// nolint // allow for future development
 var clkTck int64 = 100    // default
 var PageSize int64 = 4096 // default
 
@@ -276,7 +277,7 @@ func parseInt64(val string) int64 {
 }
 
 func statFromProc(pid int) (*SysInfo, error) {
-	procStatFileBytes, err := ioutil.ReadFile(path.Join("/proc", strconv.Itoa(pid), "stat"))
+	procStatFileBytes, err := os.ReadFile(path.Join("/proc", strconv.Itoa(pid), "stat"))
 
 	if err != nil {
 		return nil, err

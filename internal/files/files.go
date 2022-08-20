@@ -35,7 +35,7 @@ type Files interface {
 
 func NewFilesHandler(config *Config) (Files, error) {
 	if config.ForceLocalMode || config.S3 == nil || config.S3.BucketName == "" {
-		return newLocalFiles(config.Local)
+		return newLocalFiles(config.Local), nil
 	}
 
 	return newS3Files(config.S3)
