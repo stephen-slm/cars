@@ -3,7 +3,7 @@ module compile-and-run-sandbox
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.86
+	github.com/aws/aws-sdk-go v1.44.91
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
