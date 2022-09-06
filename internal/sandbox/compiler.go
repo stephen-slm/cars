@@ -262,6 +262,16 @@ var Compilers = map[string]*LanguageCompiler{
 	},
 }
 
+// mustGetCompilerByLanguage will return the language compiler for the given
+// provided language or panic.
+func mustGetCompilerByLanguage(language string) *LanguageCompiler {
+	if c, ok := Compilers[language]; ok {
+		return c
+	}
+
+	panic("language compiler does not exist for language: " + language)
+}
+
 //go:embed templates/*
 var content embed.FS
 
@@ -269,7 +279,17 @@ var content embed.FS
 // the data should be small so templates will be in memory always.
 var CompilerTemplate = map[string]string{}
 
-func LoadEmbededFiles() {
+// mustGetCompilerTemplateByLanguage will return the language compiler template
+// for the given provided language or panic.
+func mustGetCompilerTemplateByLanguage(language string) string {
+	if template, ok := CompilerTemplate[language]; ok {
+		return template
+	}
+
+	panic("language compiler template does not exist for language: " + language)
+}
+
+func LoadEmbeddedFiles() {
 	for s := range Compilers {
 		data, err := content.ReadFile(fmt.Sprintf("templates/%s.txt", s))
 
