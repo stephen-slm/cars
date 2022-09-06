@@ -2,13 +2,14 @@ package sandbox
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/client"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -16,53 +17,142 @@ type SimpleSandboxSuite struct {
 	ctx context.Context
 	suite.Suite
 	manager *ContainerManager
-	request Request
+
+	id        uuid.UUID
+	request   Request
+	container *Container
 }
 
-func (suite *SimpleSandboxSuite) SetupTest() {
+func (s *SimpleSandboxSuite) SetupTest() {
+	LoadEmbeddedFiles()
+
 	dockerClient, dockerErr := client.NewClientWithOpts(client.FromEnv)
-	suite.Nil(dockerErr, "docker is required")
+	s.Nil(dockerErr, "docker is required")
 
-	suite.ctx = context.Background()
-	suite.manager = NewSandboxContainerManager(dockerClient, 10)
-	suite.request = Request{
+	s.id = uuid.New()
+	s.ctx = context.Background()
+	s.manager = NewSandboxContainerManager(dockerClient, 10)
+
+	s.request = Request{
 		ID:               uuid.New().String(),
-		ExecutionProfile: sandbox.GetProfileForMachine(),
-		Path:             filepath.Join(os.TempDir(), "executions", "raw", compileMsg.ID),
-		SourceCode:       string(sourceCode),
-		Compiler:         compiler,
-		Test:             nil,
+		ExecutionProfile: GetProfileForMachine(),
+		Path:             filepath.Join(os.TempDir(), "executions", "raw", s.id.String()),
+		SourceCode:       mustGetCompilerTemplateByLanguage("python"),
+		Compiler:         mustGetCompilerByLanguage("python"),
+		Test: &Test{
+			ID:                 s.id.String(),
+			StdinData:          []string{"first line", "second line"},
+			ExpectedStdoutData: []string{"third line", "fourth line"},
+		},
 	}
+
+	s.container = NewSandboxContainer(&s.request, s.manager.dockerClient)
+	s.container.complete = make(chan string, 1)
 }
 
-func (suite *SimpleSandboxSuite) TestContainerPrepare() {
-	container := NewSandboxContainer(&suite.request, suite.manager.dockerClient)
-	container.complete = make(chan string, 1)
+// run after each test
+func (s *SimpleSandboxSuite) TearDownTest() {
+	defer s.container.cleanup() // nolint // test allow clean up
+}
 
-	defer container.cleanup()
+func (s *SimpleSandboxSuite) TestContainerPrepare() {
+	s.Run("should create path directory", func() {
+		s.NoError(s.container.prepare(s.ctx))
 
-	require.NotNil(suite.T(), container.prepare(suite.ctx))
+		stats, err := os.Stat(s.request.Path)
 
-	suite.Run("should create path directory", func() {
-		stats, err := os.Stat(suite.request.Path)
-
-		require.NotNil(suite.T(), err)
-		require.True(suite.T(), stats.IsDir())
+		s.NoError(err)
+		s.True(stats.IsDir())
 	})
 
-	suite.Run("should create source file with its contents", func() {
+	s.Run("should create source file with its contents", func() {
+		s.NoError(s.container.prepare(s.ctx))
 
+		sourceFilePath := filepath.Join(s.request.Path, s.request.Compiler.SourceFile)
+		stats, err := os.Stat(sourceFilePath)
+
+		s.NoError(err)
+		s.True(!stats.IsDir())
+
+		content, fileErr := os.ReadFile(sourceFilePath)
+		s.NoError(fileErr)
+
+		s.Equal(strings.TrimSpace(string(content)),
+			strings.TrimSpace(s.request.SourceCode))
 	})
 
-	suite.Run("should create input file with its contents", func() {
+	s.Run("should create input file with its contents", func() {
+		s.NoError(s.container.prepare(s.ctx))
 
+		inputFile := filepath.Join(s.request.Path, s.request.Compiler.InputFile)
+		stats, err := os.Stat(inputFile)
+
+		s.NoError(err)
+		s.True(!stats.IsDir())
+
+		content, fileErr := os.ReadFile(inputFile)
+		s.NoError(fileErr)
+
+		actual := ""
+
+		for i, testData := range s.request.Test.StdinData {
+			actual += testData
+
+			if i != len(s.request.Test.StdinData)-1 {
+				actual += "\n"
+			}
+		}
+
+		s.Equal(strings.TrimSpace(string(content)), actual)
 	})
 
-	suite.Run("should create runner.json file with its contents", func() {
+	s.Run("should create input file with no contents with no test", func() {
+		s.request.Test = nil
 
+		s.NoError(s.container.prepare(s.ctx))
+
+		inputFile := filepath.Join(s.request.Path, s.request.Compiler.InputFile)
+		stats, err := os.Stat(inputFile)
+
+		s.NoError(err)
+		s.True(!stats.IsDir())
+
+		content, fileErr := os.ReadFile(inputFile)
+		s.NoError(fileErr)
+
+		s.Equal(strings.TrimSpace(string(content)), "")
+	})
+
+	s.Run("should create runner.json file with its contents", func() {
+		s.NoError(s.container.prepare(s.ctx))
+
+		runnerFile := filepath.Join(s.request.Path, "runner.json")
+		stats, err := os.Stat(runnerFile)
+
+		s.NoError(err)
+		s.True(!stats.IsDir())
+
+		content, fileErr := os.ReadFile(runnerFile)
+		s.NoError(fileErr)
+
+		parameters := ExecutionParameters{
+			ID:              s.request.ID,
+			Language:        s.request.Compiler.Language,
+			RunTimeout:      s.request.ExecutionProfile.CodeTimeout,
+			CompileTimeout:  s.request.ExecutionProfile.CompileTimeout,
+			StandardInput:   s.request.Compiler.InputFile,
+			CompileSteps:    s.request.Compiler.compileSteps,
+			Run:             s.request.Compiler.runSteps,
+			ExecutionMemory: s.request.ExecutionProfile.ExecutionMemory,
+		}
+
+		var runner ExecutionParameters
+		s.NoError(json.Unmarshal(content, &runner))
+
+		s.Equal(runner, parameters)
 	})
 }
 
-func TestExampleTestSuite(t *testing.T) {
+func TestSandboxTestSuite(t *testing.T) {
 	suite.Run(t, new(SimpleSandboxSuite))
 }

@@ -3,6 +3,8 @@ package sandbox
 import (
 	"embed"
 	"fmt"
+	"strings"
+	"sync"
 
 	"github.com/rs/zerolog/log"
 )
@@ -265,7 +267,7 @@ var Compilers = map[string]*LanguageCompiler{
 // mustGetCompilerByLanguage will return the language compiler for the given
 // provided language or panic.
 func mustGetCompilerByLanguage(language string) *LanguageCompiler {
-	if c, ok := Compilers[language]; ok {
+	if c, ok := Compilers[strings.ToLower(language)]; ok {
 		return c
 	}
 
@@ -282,22 +284,26 @@ var CompilerTemplate = map[string]string{}
 // mustGetCompilerTemplateByLanguage will return the language compiler template
 // for the given provided language or panic.
 func mustGetCompilerTemplateByLanguage(language string) string {
-	if template, ok := CompilerTemplate[language]; ok {
+	if template, ok := CompilerTemplate[strings.ToLower(language)]; ok {
 		return template
 	}
 
 	panic("language compiler template does not exist for language: " + language)
 }
 
+var once sync.Once
+
 func LoadEmbeddedFiles() {
-	for s := range Compilers {
-		data, err := content.ReadFile(fmt.Sprintf("templates/%s.txt", s))
+	once.Do(func() {
+		for s := range Compilers {
+			data, err := content.ReadFile(fmt.Sprintf("templates/%s.txt", s))
 
-		if err != nil {
-			log.Warn().Str("lang", s).Msg("language does not have a template")
-			continue
+			if err != nil {
+				log.Warn().Str("lang", s).Msg("language does not have a template")
+				continue
+			}
+
+			CompilerTemplate[s] = string(data)
 		}
-
-		CompilerTemplate[s] = string(data)
-	}
+	})
 }
