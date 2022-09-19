@@ -7,7 +7,7 @@ require (
 	github.com/docker/docker v20.10.18+incompatible
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
-	github.com/go-playground/validator/v10 v10.11.0
+	github.com/go-playground/validator/v10 v10.11.1
 	github.com/golangci/golangci-lint v1.49.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
