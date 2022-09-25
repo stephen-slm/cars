@@ -1,11 +1,11 @@
+//go:build e2e
+
 package sandbox
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/docker/docker/client"
@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type SimpleSandboxSuite struct {
+type SandboxSuite struct {
 	ctx context.Context
 	suite.Suite
 	manager *ContainerManager
@@ -23,7 +23,7 @@ type SimpleSandboxSuite struct {
 	container *Container
 }
 
-func (s *SimpleSandboxSuite) SetupTest() {
+func (s *SandboxSuite) SetupTest() {
 	LoadEmbeddedFiles()
 
 	dockerClient, dockerErr := client.NewClientWithOpts(client.FromEnv)
@@ -51,109 +51,11 @@ func (s *SimpleSandboxSuite) SetupTest() {
 }
 
 // run after each test
-func (s *SimpleSandboxSuite) TearDownTest() {
+func (s *SandboxSuite) TearDownTest() {
 	defer s.container.cleanup() // nolint // test allow clean up
 }
 
-func (s *SimpleSandboxSuite) TestContainerPrepare() {
-	s.Run("should create path directory", func() {
-		s.NoError(s.container.prepare(s.ctx))
-
-		stats, err := os.Stat(s.request.Path)
-
-		s.NoError(err)
-		s.True(stats.IsDir())
-	})
-
-	s.Run("should create source file with its contents", func() {
-		s.NoError(s.container.prepare(s.ctx))
-
-		sourceFilePath := filepath.Join(s.request.Path, s.request.Compiler.SourceFile)
-		stats, err := os.Stat(sourceFilePath)
-
-		s.NoError(err)
-		s.True(!stats.IsDir())
-
-		content, fileErr := os.ReadFile(sourceFilePath)
-		s.NoError(fileErr)
-
-		s.Equal(strings.TrimSpace(string(content)),
-			strings.TrimSpace(s.request.SourceCode))
-	})
-
-	s.Run("should create input file with its contents", func() {
-		s.NoError(s.container.prepare(s.ctx))
-
-		inputFile := filepath.Join(s.request.Path, s.request.Compiler.InputFile)
-		stats, err := os.Stat(inputFile)
-
-		s.NoError(err)
-		s.True(!stats.IsDir())
-
-		content, fileErr := os.ReadFile(inputFile)
-		s.NoError(fileErr)
-
-		actual := ""
-
-		for i, testData := range s.request.Test.StdinData {
-			actual += testData
-
-			if i != len(s.request.Test.StdinData)-1 {
-				actual += "\n"
-			}
-		}
-
-		s.Equal(strings.TrimSpace(string(content)), actual)
-	})
-
-	s.Run("should create input file with no contents with no test", func() {
-		s.request.Test = nil
-
-		s.NoError(s.container.prepare(s.ctx))
-
-		inputFile := filepath.Join(s.request.Path, s.request.Compiler.InputFile)
-		stats, err := os.Stat(inputFile)
-
-		s.NoError(err)
-		s.True(!stats.IsDir())
-
-		content, fileErr := os.ReadFile(inputFile)
-		s.NoError(fileErr)
-
-		s.Equal(strings.TrimSpace(string(content)), "")
-	})
-
-	s.Run("should create runner.json file with its contents", func() {
-		s.NoError(s.container.prepare(s.ctx))
-
-		runnerFile := filepath.Join(s.request.Path, "runner.json")
-		stats, err := os.Stat(runnerFile)
-
-		s.NoError(err)
-		s.True(!stats.IsDir())
-
-		content, fileErr := os.ReadFile(runnerFile)
-		s.NoError(fileErr)
-
-		parameters := ExecutionParameters{
-			ID:              s.request.ID,
-			Language:        s.request.Compiler.Language,
-			RunTimeout:      s.request.ExecutionProfile.CodeTimeout,
-			CompileTimeout:  s.request.ExecutionProfile.CompileTimeout,
-			StandardInput:   s.request.Compiler.InputFile,
-			CompileSteps:    s.request.Compiler.compileSteps,
-			Run:             s.request.Compiler.runSteps,
-			ExecutionMemory: s.request.ExecutionProfile.ExecutionMemory,
-		}
-
-		var runner ExecutionParameters
-		s.NoError(json.Unmarshal(content, &runner))
-
-		s.Equal(runner, parameters)
-	})
-}
-
-func (s *SimpleSandboxSuite) TestSimpleExecution() {
+func (s *SandboxSuite) TestSimpleExecution() {
 	s.Run("container should run provided code snippet to completion", func() {
 		// remove the test, this is not going to perform this kind of testing
 		// but validating tests will be performed in another set of tests.
@@ -180,5 +82,5 @@ func (s *SimpleSandboxSuite) TestSimpleExecution() {
 }
 
 func TestSandboxTestSuite(t *testing.T) {
-	suite.Run(t, new(SimpleSandboxSuite))
+	suite.Run(t, new(SandboxSuite))
 }
