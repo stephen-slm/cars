@@ -3,4 +3,4 @@
 let hello () = "Hello"
 let world () = "World"
 
-printfn "%s, %s!" hello(), world()
+printfn "%s!" (hello() + ", " + world())
