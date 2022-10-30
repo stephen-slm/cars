@@ -24,7 +24,7 @@ type SimpleSandboxSuite struct {
 }
 
 func (s *SimpleSandboxSuite) SetupTest() {
-	LoadEmbeddedFiles()
+	LoadEmbeddedTestFiles()
 
 	dockerClient, dockerErr := client.NewClientWithOpts(client.FromEnv)
 	s.Nil(dockerErr, "docker is required")
@@ -37,7 +37,7 @@ func (s *SimpleSandboxSuite) SetupTest() {
 		ID:               uuid.New().String(),
 		ExecutionProfile: GetProfileForMachine(),
 		Path:             filepath.Join(os.TempDir(), "executions", "raw", s.id.String()),
-		SourceCode:       mustGetCompilerTemplateByLanguage("python"),
+		SourceCode:       mustGetCompilerTestTemplateByLanguage(s.T(), "simple", "python"),
 		Compiler:         mustGetCompilerByLanguage("python"),
 		Test: &Test{
 			ID:                 s.id.String(),

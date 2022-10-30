@@ -1,0 +1,9 @@
+function hello() {
+    return "Hello"
+}
+
+function world() {
+    return "World"
+}
+
+console.log(hello() + ", " + world() + "!");

@@ -1,0 +1,14 @@
+#include <iostream>
+
+std::string hello() {
+    return "Hello";
+}
+
+std::string world() {
+    return "World";
+}
+
+int main() {
+    std::cout << hello() << ", " << world() << "!";
+    return 0;
+}

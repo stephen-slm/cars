@@ -1,0 +1,11 @@
+fun hello(): String {
+    return "Hello"
+}
+
+fun world(): String {
+    return "World"
+}
+
+fun main(args : Array<String>) {
+    println(hello() + ", " + world() + "!")
+}

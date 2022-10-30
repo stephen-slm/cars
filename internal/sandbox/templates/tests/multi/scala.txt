@@ -1,0 +1,13 @@
+object Solution {
+    def hello() : String = {
+        return "Hello"
+    }
+
+     def world() : String = {
+        return "World"
+    }
+
+    def main(args: Array[String]) = {
+        println(hello() + ", " + world() + "!")
+    }
+}

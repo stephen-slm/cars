@@ -37,7 +37,7 @@ func main() {
 	log.Info().Msg("starting cars-api")
 	args := parser.ParseDefaultConfigurationArguments()
 
-	sandbox.LoadEmbeddedFiles()
+	sandbox.LoadEmbeddedTemplateFiles()
 
 	queueRunner, err := queue.NewQueue(&queue.Config{
 		ForceLocalMode: true,

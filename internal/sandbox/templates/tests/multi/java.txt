@@ -1,0 +1,14 @@
+// Keep the class name as Solution otherwise the project will not compile.
+public class Solution {
+      static String hello() {
+              return "Hello";
+      }
+
+       static String world() {
+              return "World";
+       }
+
+      public static void main(String[] args) {
+            System.out.println(hello() + ", " + world() + "!");
+      }
+}

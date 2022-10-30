@@ -293,7 +293,7 @@ func mustGetCompilerTemplateByLanguage(language string) string {
 
 var once sync.Once
 
-func LoadEmbeddedFiles() {
+func LoadEmbeddedTemplateFiles() {
 	once.Do(func() {
 		for s := range Compilers {
 			data, err := content.ReadFile(fmt.Sprintf("templates/%s.txt", s))
