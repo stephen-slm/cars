@@ -23,4 +23,5 @@ RUN cd /projectc && dotnet new console -lang c# -f net6.0
 RUN rm /projectf/Program.fs
 RUN rm /projectc/Program.cs
 
+RUN apt-get  update
 RUN apt-get install coreutils

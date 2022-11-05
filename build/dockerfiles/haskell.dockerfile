@@ -13,4 +13,6 @@ RUN go build -o /runner ./cmd/services/cars-runner/main.go
 FROM haskell:9-buster
 
 COPY --from=BUILDER /runner /runner
+
+RUN apt-get  update
 RUN apt-get install coreutils

@@ -13,4 +13,6 @@ RUN go build -o /runner ./cmd/services/cars-runner/main.go
 FROM rust:1.61-alpine
 
 COPY --from=BUILDER /runner /runner
-RUN apk --update add coreutils
+
+RUN apt-get  update
+RUN apt-get install coreutils
