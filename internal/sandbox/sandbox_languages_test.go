@@ -142,7 +142,7 @@ func TestCompleteMultiFunctionExecution(t *testing.T) {
 
 			// assert.ould lean on a more complete output but this should do for now.
 			assert.True(t, len(result.Output) > 0)
-			assert.Equal(t, "Hello, World!", result.Output[0])
+			assert.Equal(t, "Hello, World!", strings.Join(result.Output, "\n"))
 
 			assert.NoError(t, manager.RemoveContainer(context.Background(), id, false))
 		})

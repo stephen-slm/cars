@@ -35,7 +35,7 @@ func mustGetCompilerTestTemplateByLanguage(t *testing.T, test, language string) 
 	msg := fmt.Sprintf("language does not have supporting template "+
 		"for test %s and language %s", test, language)
 
-	t.Skipf(msg)
+	t.Fatal(msg)
 	return ""
 }
 

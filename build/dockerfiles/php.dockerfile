@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM pypy:2.7-buster
+FROM php:8.1-fpm-buster
 
 COPY --from=BUILDER /runner /runner
 RUN apt-get install coreutils
