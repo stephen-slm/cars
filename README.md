@@ -1,13 +1,13 @@
 <div align="center">
 
-	# CARS
+# CARS
 
-	![License][license-badge]
-	![Build][build-badge]
-	![Go][go-version-badge]
-	![Version][release-version-badge]
+![License][license-badge]
+![Build][build-badge]
+![Go][go-version-badge]
+![Version][release-version-badge]
 
-	Cars is an **Compile And Run Sandbox**.
+Cars is an **Compile And Run Sandbox**.
 
 </div>
 
