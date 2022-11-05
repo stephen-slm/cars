@@ -1,0 +1,6 @@
+hello = "Hello"
+world = "World"
+
+main = putStrLn (hello ++ ", " ++ world ++ "!")
+
+

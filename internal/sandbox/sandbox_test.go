@@ -4,16 +4,12 @@ package sandbox
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-	"sync"
 	"testing"
 
 	"github.com/docker/docker/client"
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -25,63 +21,6 @@ type SandboxSuite struct {
 	id        uuid.UUID
 	request   Request
 	container *Container
-}
-
-// CompilerTestTemplate is a mapping between the compiler template name and
-// the kind of test and then the source code for that language. e.g something
-// like the following:
-//
-// multi-functional => go => sourceCode
-var CompilerTestTemplate = map[string]map[string]string{}
-
-// mustGetCompilerTestTemplateByLanguage will return the language compiler test
-// template for the given provided language or panic.
-func mustGetCompilerTestTemplateByLanguage(t *testing.T, test, language string) string {
-	if testFolder, ok := CompilerTestTemplate[strings.ToLower(test)]; ok {
-		if template, ok := testFolder[strings.ToLower(language)]; ok {
-			return template
-		}
-	}
-
-	msg := fmt.Sprintf("language does not have supporting template "+
-		"for test %s and language %s", test, language)
-
-	t.Skipf(msg)
-	return ""
-}
-
-var testOnce sync.Once
-
-func LoadEmbeddedTestFiles() {
-	testOnce.Do(func() {
-		folders, _ := os.ReadDir("templates/tests")
-
-		for _, folder := range folders {
-			if !folder.IsDir() {
-				continue
-			}
-
-			CompilerTestTemplate[folder.Name()] = map[string]string{}
-			files, _ := os.ReadDir(fmt.Sprintf("templates/tests/%s", folder.Name()))
-
-			for _, file := range files {
-				path := fmt.Sprintf("templates/tests/%s/%s", folder.Name(), file.Name())
-				data, err := content.ReadFile(path)
-
-				lang := strings.Split(file.Name(), ".")[0]
-
-				if err != nil {
-					log.Warn().Str("lang", lang).
-						Str("test-kind", folder.Name()).
-						Err(err).
-						Msg("language does not have a template")
-					continue
-				}
-
-				CompilerTestTemplate[folder.Name()][lang] = string(data)
-			}
-		}
-	})
 }
 
 func (s *SandboxSuite) SetupTest() {
@@ -137,7 +76,7 @@ func (s *SandboxSuite) TestSimpleExecution() {
 
 		s.Equal(Finished.String(), result.Status.String())
 		s.Equal(NoTest.String(), result.TestStatus.String())
-		s.Equal("Hello World!", result.Output[0])
+		s.Equal("Hello, World!", result.Output[0])
 
 		s.NoError(s.manager.RemoveContainer(s.ctx, id, false))
 	})

@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
+    <module name="cars" />
+    <target name="WSL - Ubuntu" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="--tags=e2e" />
+    <kind value="DIRECTORY" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <framework value="gotest" />
+    <method v="2" />
+  </configuration>
+</component>
