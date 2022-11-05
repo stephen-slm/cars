@@ -1,0 +1,10 @@
+let randomStr =
+    let chars = "A"
+    let charsLen = chars.Length
+    let random = System.Random()
+
+    fun len ->
+        let randomChars = [|for i in 0..len -> chars.[0]|]
+        new System.String(randomChars)
+
+let randomString = randomStr(50000 * 100)

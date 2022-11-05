@@ -1,0 +1,8 @@
+// Keep the class name as Solution otherwise the project will not compile.
+public class Solution {
+      public static void main(String[] args) {
+            char[] s = new char[1024 * 1000 * 10];
+            String str = String.copyValueOf(s);
+            System.out.println("Hello, World!");
+      }
+}
