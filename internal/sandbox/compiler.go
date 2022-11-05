@@ -262,6 +262,18 @@ var Compilers = map[string]*LanguageCompiler{
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
+	"php": {
+		Dockerfile:         "php",
+		Language:           "PHP",
+		runSteps:           "php /input/solution.php",
+		Interpreter:        true,
+		VirtualMachineName: "virtual_machine_php",
+		SourceFile:         "solution.php",
+		OutputFile:         "output",
+		OutputErrFile:      "output_error",
+		CompilerOutputFile: "compile",
+		InputFile:          "input",
+	},
 }
 
 // mustGetCompilerByLanguage will return the language compiler for the given

@@ -1,0 +1,11 @@
+<?php
+function hello() : string {
+  return "Hello";
+}
+
+function world() : string {
+  return "World";
+}
+
+echo hello() . ", " . world() . "!"
+?>

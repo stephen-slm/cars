@@ -13,6 +13,7 @@ const state = {
         "cpp": "c_cpp",
         "node": "javascript",
         "fsharp": "fsharp",
+        "php": "php",
     },
 
     /**
