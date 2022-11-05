@@ -1,0 +1,20 @@
+using System;
+
+namespace Solution
+{
+    internal class Solution
+    {
+        static string hello() {
+            return "Hello";
+        }
+
+         static string world() {
+            return "World";
+        }
+
+        static void Main(string[] args)
+        {
+            Console.WriteLine(hello() + ", " + world() + "!");
+        }
+    }
+}

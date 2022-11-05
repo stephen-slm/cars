@@ -1,5 +1,5 @@
 object Solution {
     def main(args: Array[String]) = {
-        println("Hello, World!")
+        Thread.sleep(5000)
     }
 }

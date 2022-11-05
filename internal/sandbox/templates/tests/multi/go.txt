@@ -1,0 +1,15 @@
+package main
+
+import "fmt"
+
+func hello() string {
+	return "Hello"
+}
+
+func world() string {
+	return "World"
+}
+
+func main() {
+	fmt.Println(hello() + ", " + world() + "!")
+}

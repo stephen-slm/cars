@@ -1,0 +1,11 @@
+fn hello() -> String {
+    return "Hello".to_owned()
+}
+
+fn world() -> String {
+    return "World".to_owned()
+}
+
+fn main() {
+    println!("{}, {}!", hello(), world());
+}

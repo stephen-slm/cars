@@ -1,0 +1,6 @@
+async function main() {
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    await sleep(200);
+}
+
+main().then().catch(console.error)

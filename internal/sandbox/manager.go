@@ -87,7 +87,6 @@ func (s *ContainerManager) getContainer(id string) *Container {
 
 func (s *ContainerManager) Stop() {
 	log.Info().Msg("stopping sandbox manager")
-
 	atomic.StoreInt32(&s.stopFlag, 1)
 }
 
