@@ -1,0 +1,5 @@
+object Solution {
+    def main(args: Array[String]) = {
+        Thread.sleep(5000)
+    }
+}

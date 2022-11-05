@@ -14,10 +14,13 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"compile-and-run-sandbox/internal/memory"
 )
 
 var manager *ContainerManager
@@ -147,13 +150,61 @@ func TestCompleteMultiFunctionExecution(t *testing.T) {
 }
 
 func TestCompleteTimeBoundExecution(t *testing.T) {
+	manager := setup(t, context.Background())
 
+	for languageName, compiler := range Compilers {
+		t.Run(fmt.Sprintf("time-bound execution check for %s", languageName), func(t *testing.T) {
+			languageName := languageName
+			compiler := compiler
+
+			t.Parallel()
+
+			pathingUUID := uuid.New()
+
+			request := Request{
+				ID: uuid.New().String(),
+				ExecutionProfile: &Profile{
+					AutoRemove:      true,
+					CodeTimeout:     time.Millisecond * 100,
+					CompileTimeout:  time.Second * 5,
+					ContainerMemory: memory.Gigabyte,
+					ExecutionMemory: memory.Gigabyte,
+				},
+
+				Path: filepath.Join(os.TempDir(), "executions", "raw", pathingUUID.String()),
+
+				// Pull the source code from a pre-generated list of possible
+				// values for complex implementations. Ensuring that we wrap
+				// the correct implementations if needed.
+				SourceCode: mustGetCompilerTestTemplateByLanguage(t, "time", languageName),
+				Compiler:   compiler,
+
+				// No tests are checked in this example.
+				Test: nil,
+			}
+
+			id, complete, err := manager.AddContainer(context.Background(), &request)
+
+			assert.NoError(t, err)
+			assert.NotNil(t, id)
+
+			<-complete
+
+			result := manager.getContainer(id).GetResponse()
+
+			// Verify that it finished and we had no tests.
+			assert.Equal(t, TimeLimitExceeded.String(), result.Status.String(),
+				"output: %s\noutput-error: %s\ncompiler: %s",
+				strings.Join(result.Output, "\n"),
+				strings.Join(result.OutputError, "\n"),
+				strings.Join(result.CompilerOutput, "\n"),
+			)
+
+			assert.NoError(t, manager.RemoveContainer(context.Background(), id, false))
+		})
+	}
 }
 
 func TestCompleteMemoryBoundExecution(t *testing.T) {
-
-}
-
-func TestCompleteMathematicsExecution(t *testing.T) {
 
 }

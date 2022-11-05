@@ -1,0 +1,8 @@
+import java.util.concurrent.TimeUnit;
+
+// Keep the class name as Solution otherwise the project will not compile.
+public class Solution {
+      public static void main(String[] args) throws Exception {
+            TimeUnit.SECONDS.sleep(1);
+      }
+}

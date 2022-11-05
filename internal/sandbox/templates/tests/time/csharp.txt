@@ -1,0 +1,12 @@
+using System;
+
+namespace Solution
+{
+    internal class Solution
+    {
+        static void Main(string[] args)
+        {
+            System.Threading.Thread.Sleep(1000);
+        }
+    }
+}
