@@ -128,22 +128,6 @@ var Compilers = map[string]*LanguageCompiler{
 		CompilerOutputFile: "compile",
 		InputFile:          "input",
 	},
-	"haskell": {
-		Dockerfile: "haskell",
-		Compiler:   "ghc",
-		Language:   "Haskell",
-		runSteps:   "/solution",
-		compileSteps: []string{
-			"ghc -o /solution /input/solution.hs",
-		},
-		Interpreter:        false,
-		VirtualMachineName: "virtual_machine_haskell",
-		SourceFile:         "solution.hs",
-		OutputFile:         "output",
-		OutputErrFile:      "output_error",
-		CompilerOutputFile: "compile",
-		InputFile:          "input",
-	},
 	"c": {
 		Dockerfile: "gcc",
 		Compiler:   "gcc",

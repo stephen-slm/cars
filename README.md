@@ -1,13 +1,13 @@
 <div align="center">
 
-# CARS
+	# CARS
 
-![License][license-badge]
-![Build][build-badge]
-![Go][go-version-badge]
-![Version][release-version-badge]
+	![License][license-badge]
+	![Build][build-badge]
+	![Go][go-version-badge]
+	![Version][release-version-badge]
 
-Cars is an **Compile And Run Sandbox**.
+	Cars is an **Compile And Run Sandbox**.
 
 </div>
 
@@ -44,8 +44,8 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 
 | Language | Version      | Url                          | Time | Memory |
 |----------|--------------|------------------------------|------|--------|
-| C        | GCC V12      | https://gcc.gnu.org          | ✅️   | ❌     |
-| C++      | GCC V12      | https://gcc.gnu.org          | ✅️   | ❌     |
+| C        | GCC 9.5.x    | https://gcc.gnu.org          | ✅️   | ✅️     |
+| C++      | GCC 9.5.x    | https://gcc.gnu.org          | ✅️   | ✅️     |
 | C#       | .NET 6.0     | https://dotnet.microsoft.com | ✅️   | ✅️ ️    |
 | F#       | .NET 6.0     | https://dotnet.microsoft.com | ✅️   | ✅️     |
 | Java     | OpenJDK 18.0 | https://openjdk.java.net     | ✅️   | ✅️     |
@@ -55,7 +55,6 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 | Python2  | 2.7.x        | https://pypy.org             | ✅️   | ✅️     |
 | Python3  | 3.9.x        | https://pypy.org             | ✅️   | ✅️     |
 | Go       | 1.18.x       | https://go.dev               | ✅️   | ✅️     |
-| Haskell  | 9.x.x        | https://haskell.org          | ✅️   | ❌     |
 | Ruby     | 3.1.x        | https://ruby-lang.org        | ✅️   | ✅️     |
 | Rust     | 1.65.x       | https://rust-lang.org        | ✅️   | ✅️     |
 | PHP      | 8.1.x        | https://www.php.net/         | ✅️   | ✅️     |

@@ -147,7 +147,7 @@ URL: `GET - /languages`
 
 This endpoint is designed to allow consumers of the platform to serve the user with a template they can start from. This
 is more important for languages that require selective formatting or a `main` function. An example of these languages
-would be Haskell, C++, and C.
+would be C++, and C.
 
 URL: `GET - /languages/{language}/template`  
 Response: A usable template for that language that will run when attempting to compile

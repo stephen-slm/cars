@@ -1,0 +1,20 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define ASCII_START 32
+#define ASCII_END 126
+
+char* generateRandomString(int size) {
+    int i;
+    char *res = malloc(size + 1);
+    for(i = 0; i < size; i++) {
+        res[i] = (char) (rand()%(ASCII_END-ASCII_START))+ASCII_START;
+    }
+    res[i] = '\0';
+    return res;
+}
+
+int main() {
+   char* a = generateRandomString(1024*1024*51);
+   return 0;
+}
