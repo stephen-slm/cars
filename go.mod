@@ -13,6 +13,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/golang/mock v1.6.0
+	github.com/golang/protobuf v1.5.2
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
@@ -24,6 +25,7 @@ require (
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/tools v0.2.0
+	google.golang.org/grpc v1.50.1
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
 	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8
 	gorm.io/driver/postgres v1.4.5
@@ -98,7 +100,6 @@ require (
 	github.com/gofrs/uuid v4.3.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/golangci/check v0.0.0-20180506172741-cfe4005ccda2 // indirect
 	github.com/golangci/dupl v0.0.0-20180902072040-3e9179ac440a // indirect
@@ -250,7 +251,6 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221014213838-99cd37c6964a // indirect
-	google.golang.org/grpc v1.50.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

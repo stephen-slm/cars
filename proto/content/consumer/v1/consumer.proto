@@ -1,10 +1,71 @@
 syntax = 'proto3';
-
+import "google/protobuf/empty.proto";
 package content.consumer.v1;
 
-option go_package = "github.com/stephensli/cars/internal/gen/pb/consumer/v1";
+option go_package = "compile-and-run-sandbox/internal/gen/pb/consumer/v1";
 
 
 service ConsumerService {
+  rpc Ping (google.protobuf.Empty) returns (PingResponse) {}
 
+  // GetTemplate is designed to allow consumers of the platform to serve the
+  // user with a template they can start from. This is more important for
+  // languages that require selective formatting or a main function. An example
+  // of these languages would be C++, and C.
+  rpc GetTemplate (GetTemplateRequest) returns (GetTemplateResponse) {}
+
+  // GetSupportedLanguages will return a list of languages that can be exposed
+  // to the user. This response contains a display name for the language that
+  // will contain compiler information if important and will also return the
+  // code. The code is the value sent to the server when requesting to compile
+  // and run.
+  rpc GetSupportedLanguages (google.protobuf.Empty) returns (GetSupportedLanguagesResponse) {}
+}
+
+// ########################
+// # Ping                ##
+// ########################
+
+message PingResponse {
+  string message = 1;
+}
+
+// ########################
+// # Templates           ##
+// ########################
+
+message GetTemplateRequest {
+  string language = 1;
+}
+
+message GetTemplateResponse {
+  string template = 1;
+}
+
+// ########################
+// # Supported Languages ##
+// ########################
+
+message SupportedLanguage {
+  // The language code send during the compile request, this is not the same as
+  // the display name. This is also the code used to get the template.
+  string languageCode = 1;
+  // The display name the user can be shown and will understand for example
+  // the display name could be C# and the code would be csharp.
+  string displayName = 2;
+}
+
+message GetSupportedLanguagesResponse {
+  repeated SupportedLanguage languages = 1;
+}
+
+// ########################
+// # Compile Request     ##
+// ########################
+
+message CompileRequest {
+  string langauge = 1;
+  string source = 2;
+  repeated string standardInData = 3;
+  repeated string expectedStandardOutData = 4;
 }

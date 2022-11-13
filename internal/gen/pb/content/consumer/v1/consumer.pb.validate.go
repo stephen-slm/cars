@@ -32,3 +32,362 @@ var (
 	_ = (*mail.Address)(nil)
 	_ = ptypes.DynamicAny{}
 )
+
+// Validate checks the field values on PingResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
+func (m *PingResponse) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Message
+
+	return nil
+}
+
+// PingResponseValidationError is the validation error returned by
+// PingResponse.Validate if the designated constraints aren't met.
+type PingResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e PingResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e PingResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e PingResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e PingResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e PingResponseValidationError) ErrorName() string { return "PingResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e PingResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sPingResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = PingResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = PingResponseValidationError{}
+
+// Validate checks the field values on GetTemplateRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *GetTemplateRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Language
+
+	return nil
+}
+
+// GetTemplateRequestValidationError is the validation error returned by
+// GetTemplateRequest.Validate if the designated constraints aren't met.
+type GetTemplateRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetTemplateRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetTemplateRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetTemplateRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetTemplateRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetTemplateRequestValidationError) ErrorName() string {
+	return "GetTemplateRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetTemplateRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetTemplateRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetTemplateRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetTemplateRequestValidationError{}
+
+// Validate checks the field values on GetTemplateResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *GetTemplateResponse) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Template
+
+	return nil
+}
+
+// GetTemplateResponseValidationError is the validation error returned by
+// GetTemplateResponse.Validate if the designated constraints aren't met.
+type GetTemplateResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetTemplateResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetTemplateResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetTemplateResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetTemplateResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetTemplateResponseValidationError) ErrorName() string {
+	return "GetTemplateResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetTemplateResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetTemplateResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetTemplateResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetTemplateResponseValidationError{}
+
+// Validate checks the field values on SupportedLanguage with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *SupportedLanguage) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for LanguageCode
+
+	// no validation rules for DisplayName
+
+	return nil
+}
+
+// SupportedLanguageValidationError is the validation error returned by
+// SupportedLanguage.Validate if the designated constraints aren't met.
+type SupportedLanguageValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SupportedLanguageValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SupportedLanguageValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SupportedLanguageValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SupportedLanguageValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SupportedLanguageValidationError) ErrorName() string {
+	return "SupportedLanguageValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SupportedLanguageValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSupportedLanguage.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SupportedLanguageValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SupportedLanguageValidationError{}
+
+// Validate checks the field values on GetSupportedLanguagesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *GetSupportedLanguagesResponse) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	for idx, item := range m.GetLanguages() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetSupportedLanguagesResponseValidationError{
+					field:  fmt.Sprintf("Languages[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// GetSupportedLanguagesResponseValidationError is the validation error
+// returned by GetSupportedLanguagesResponse.Validate if the designated
+// constraints aren't met.
+type GetSupportedLanguagesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetSupportedLanguagesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetSupportedLanguagesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetSupportedLanguagesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetSupportedLanguagesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetSupportedLanguagesResponseValidationError) ErrorName() string {
+	return "GetSupportedLanguagesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetSupportedLanguagesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetSupportedLanguagesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetSupportedLanguagesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetSupportedLanguagesResponseValidationError{}

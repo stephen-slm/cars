@@ -1,6 +1,10 @@
 package main
 
 import (
+	"compile-and-run-sandbox/internal/api/consumer"
+	v1 "compile-and-run-sandbox/internal/gen/pb/content/consumer/v1"
+	"google.golang.org/grpc"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -93,6 +97,11 @@ func main() {
 	// error messages in the future.
 	_ = enTranslations.RegisterDefaultTranslations(validate, translator)
 
+	lis, err := net.Listen("tcp", ":8080")
+	server := grpc.NewServer()
+
+	v1.RegisterConsumerServiceServer(server, &consumer.Server{})
+
 	compileHandlers := routing.CompilerHandlers{
 		FileHandler: fileHandler,
 		Repo:        repo,
@@ -104,15 +113,11 @@ func main() {
 	r.HandleFunc("/compile", compileHandlers.HandleCompileRequest).Methods(http.MethodPost)
 	r.HandleFunc("/compile/{id}", compileHandlers.HandleGetCompileResponse).Methods(http.MethodGet)
 
-	r.HandleFunc("/languages", routing.HandleListLanguagesSupported).Methods(http.MethodGet)
-	r.HandleFunc("/languages/{lang}/template", routing.HandleGetLanguageTemplate).Methods(http.MethodGet)
-
 	if config.GetCurrentEnvironment() == config.DevelopmentEnvironment {
 		r.PathPrefix("/").Handler(http.FileServer(http.Dir("./assets/sample-site/")))
 	}
 
 	log.Info().Msg("listening on :8080")
-
 	r.Use(mux.CORSMethodMiddleware(r))
 
 	credentialsOk := handlers.AllowCredentials()
@@ -122,7 +127,13 @@ func main() {
 
 	handler := handlers.CORS(credentialsOk, headersOk, originsOk, methodsOk)(r)
 
-	if listenErr := http.ListenAndServe(":8080", handler); listenErr != nil {
+	go func() {
+		if listenErr := server.Serve(lis); listenErr != nil {
+			log.Fatal().Err(listenErr).Msg("failed to listen")
+		}
+	}()
+
+	if listenErr := http.Serve(lis, handler); listenErr != nil {
 		log.Fatal().Err(listenErr).Msg("failed to listen")
 	}
 }

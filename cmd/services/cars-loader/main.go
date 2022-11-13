@@ -23,7 +23,6 @@ func main() {
 	args := parser.ParseDefaultConfigurationArguments()
 
 	log.Info().Msg("starting docker client")
-
 	dockerClient, dockerErr := client.NewClientWithOpts(client.FromEnv)
 
 	if dockerErr != nil {
