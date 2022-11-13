@@ -7,6 +7,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
+
 	"compile-and-run-sandbox/internal/files"
 	consumerv1 "compile-and-run-sandbox/internal/gen/pb/content/consumer/v1"
 	"compile-and-run-sandbox/internal/queue"
@@ -30,7 +33,51 @@ type Server struct {
 	Queue       queue.Queue
 }
 
-func (s Server) CompileQueueRequest(_ context.Context, direct *consumerv1.CompileRequest) (*consumerv1.CompileQueueResponse, error) {
+func (s Server) GetCompileResultRequest(ctx context.Context, in *consumerv1.CompileResultRequest) (*consumerv1.CompileResultResponse, error) {
+	parsedIDValue, err := uuid.Parse(in.GetId())
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse id value")
+	}
+
+	execution, err := s.Repo.GetExecution(parsedIDValue.String())
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("the execution does not exist by the provided id")
+	}
+
+	resp := &consumerv1.CompileResultResponse{
+		Status:          execution.Status,
+		TestStatus:      execution.TestStatus,
+		CompileMs:       execution.CompileMs,
+		Language:        execution.Language,
+		RuntimeMs:       execution.RuntimeMs,
+		RuntimeMemoryMb: execution.RuntimeMemoryMb,
+		Output:          "",
+		OutputError:     "",
+	}
+
+	compiler := sandbox.Compilers[execution.Language]
+
+	if data, outputErr := s.FileHandler.GetFile(parsedIDValue.String(), compiler.OutputFile); outputErr == nil {
+		log.Debug().Str("data", string(data)).Msg("data")
+		resp.Output = string(data)
+	}
+
+	if data, outputErr := s.FileHandler.GetFile(parsedIDValue.String(), compiler.OutputErrFile); outputErr == nil {
+		log.Debug().Str("data", string(data)).Msg("data")
+		resp.OutputError = string(data)
+	}
+
+	if data, outputErr := s.FileHandler.GetFile(parsedIDValue.String(), compiler.CompilerOutputFile); outputErr == nil {
+		log.Debug().Str("data", string(data)).Msg("data")
+		resp.CompilerOutput = string(data)
+	}
+
+	return resp, nil
+}
+
+func (s Server) CreateCompileRequest(_ context.Context, direct *consumerv1.CompileRequest) (*consumerv1.CompileQueueResponse, error) {
 	compiler := sandbox.Compilers[direct.Language]
 	requestID := uuid.NewString()
 

@@ -26,7 +26,12 @@ service ConsumerService {
 
   // CompileQueueRequest is the core compile request endpoint. Calling into this
   // will trigger the flow to run the user-submitted code.
-  rpc CompileQueueRequest (CompileRequest) returns (CompileQueueResponse) {}
+  rpc CreateCompileRequest (CompileRequest) returns (CompileQueueResponse) {}
+
+  // GetCompileResultRequest is required to be called after requesting to
+  // compile, all details about the running state and the final output
+  // of the compiling and execution are from this.
+  rpc GetCompileResultRequest (CompileResultRequest) returns (CompileResultResponse) {}
 }
 
 // ########################
@@ -123,4 +128,27 @@ message CompileRequest {
 
 message CompileQueueResponse {
   string id = 1;
+}
+
+// ########################
+// # Get Compile Result  ##
+// ########################
+
+message CompileResultRequest {
+  string id = 1;
+}
+
+message CompileResultResponse {
+  string language = 1;
+  string status = 2;
+  string test_status = 3;
+
+  int64 compile_ms = 4;
+  int64 runtime_ms = 5;
+
+  double runtime_memory_mb = 6;
+
+  string output = 7;
+  string output_error = 8;
+  string compiler_output = 9;
 }

@@ -9,6 +9,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	"golang.org/x/sync/errgroup"
 
 	"compile-and-run-sandbox/internal/api/consumer"
 	v1 "compile-and-run-sandbox/internal/gen/pb/content/consumer/v1"
@@ -27,12 +28,11 @@ import (
 
 	enTranslations "github.com/go-playground/validator/v10/translations/en"
 
-	"compile-and-run-sandbox/internal/queue"
-	"compile-and-run-sandbox/internal/repository"
-	"compile-and-run-sandbox/internal/routing"
-
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+
+	"compile-and-run-sandbox/internal/queue"
+	"compile-and-run-sandbox/internal/repository"
 )
 
 func getTranslator() ut.Translator {
@@ -112,17 +112,13 @@ func main() {
 		)),
 	)
 
-	v1.RegisterConsumerServiceServer(server, &consumer.Server{})
-
-	compileHandlers := routing.CompilerHandlers{
+	v1.RegisterConsumerServiceServer(server, &consumer.Server{
 		FileHandler: fileHandler,
 		Repo:        repo,
 		Translator:  translator,
 		Validator:   validate,
 		Queue:       queueRunner,
-	}
-
-	r.HandleFunc("/compile/{id}", compileHandlers.HandleGetCompileResponse).Methods(http.MethodGet)
+	})
 
 	if config.GetCurrentEnvironment() == config.DevelopmentEnvironment {
 		r.PathPrefix("/").Handler(http.FileServer(http.Dir("./assets/sample-site/")))
@@ -137,14 +133,17 @@ func main() {
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 
 	handler := handlers.CORS(credentialsOk, headersOk, originsOk, methodsOk)(r)
+	g := errgroup.Group{}
 
-	go func() {
-		if listenErr := server.Serve(lis); listenErr != nil {
-			log.Fatal().Err(listenErr).Msg("failed to listen")
-		}
-	}()
+	g.Go(func() error {
+		return server.Serve(lis)
+	})
 
-	if listenErr := http.Serve(lis, handler); listenErr != nil {
+	g.Go(func() error {
+		return http.Serve(lis, handler)
+	})
+
+	if listenErr := g.Wait(); listenErr != nil {
 		log.Fatal().Err(listenErr).Msg("failed to listen")
 	}
 }

@@ -855,3 +855,227 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CompileQueueResponseValidationError{}
+
+// Validate checks the field values on CompileResultRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CompileResultRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CompileResultRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CompileResultRequestMultiError, or nil if none found.
+func (m *CompileResultRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CompileResultRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	if len(errors) > 0 {
+		return CompileResultRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CompileResultRequestMultiError is an error wrapping multiple validation
+// errors returned by CompileResultRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CompileResultRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CompileResultRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CompileResultRequestMultiError) AllErrors() []error { return m }
+
+// CompileResultRequestValidationError is the validation error returned by
+// CompileResultRequest.Validate if the designated constraints aren't met.
+type CompileResultRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CompileResultRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CompileResultRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CompileResultRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CompileResultRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CompileResultRequestValidationError) ErrorName() string {
+	return "CompileResultRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CompileResultRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCompileResultRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CompileResultRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CompileResultRequestValidationError{}
+
+// Validate checks the field values on CompileResultResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CompileResultResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CompileResultResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CompileResultResponseMultiError, or nil if none found.
+func (m *CompileResultResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CompileResultResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Language
+
+	// no validation rules for Status
+
+	// no validation rules for TestStatus
+
+	// no validation rules for CompileMs
+
+	// no validation rules for RuntimeMs
+
+	// no validation rules for RuntimeMemoryMb
+
+	// no validation rules for Output
+
+	// no validation rules for OutputError
+
+	// no validation rules for CompilerOutput
+
+	if len(errors) > 0 {
+		return CompileResultResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CompileResultResponseMultiError is an error wrapping multiple validation
+// errors returned by CompileResultResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CompileResultResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CompileResultResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CompileResultResponseMultiError) AllErrors() []error { return m }
+
+// CompileResultResponseValidationError is the validation error returned by
+// CompileResultResponse.Validate if the designated constraints aren't met.
+type CompileResultResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CompileResultResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CompileResultResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CompileResultResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CompileResultResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CompileResultResponseValidationError) ErrorName() string {
+	return "CompileResultResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CompileResultResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCompileResultResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CompileResultResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CompileResultResponseValidationError{}
