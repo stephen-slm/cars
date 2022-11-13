@@ -1,13 +1,19 @@
 package main
 
 import (
-	"compile-and-run-sandbox/internal/api/consumer"
-	v1 "compile-and-run-sandbox/internal/gen/pb/content/consumer/v1"
-	"google.golang.org/grpc"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
+
+	"compile-and-run-sandbox/internal/api/consumer"
+	v1 "compile-and-run-sandbox/internal/gen/pb/content/consumer/v1"
+
+	"google.golang.org/grpc"
 
 	"compile-and-run-sandbox/internal/config"
 	"compile-and-run-sandbox/internal/files"
@@ -98,7 +104,13 @@ func main() {
 	_ = enTranslations.RegisterDefaultTranslations(validate, translator)
 
 	lis, err := net.Listen("tcp", ":8080")
-	server := grpc.NewServer()
+
+	server := grpc.NewServer(
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_validator.UnaryServerInterceptor(),
+			grpc_recovery.UnaryServerInterceptor(),
+		)),
+	)
 
 	v1.RegisterConsumerServiceServer(server, &consumer.Server{})
 
@@ -110,7 +122,6 @@ func main() {
 		Queue:       queueRunner,
 	}
 
-	r.HandleFunc("/compile", compileHandlers.HandleCompileRequest).Methods(http.MethodPost)
 	r.HandleFunc("/compile/{id}", compileHandlers.HandleGetCompileResponse).Methods(http.MethodGet)
 
 	if config.GetCurrentEnvironment() == config.DevelopmentEnvironment {

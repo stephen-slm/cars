@@ -11,11 +11,12 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -30,21 +31,56 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
+	_ = anypb.Any{}
+	_ = sort.Sort
 )
 
 // Validate checks the field values on PingResponse with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *PingResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PingResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in PingResponseMultiError, or
+// nil if none found.
+func (m *PingResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PingResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for Message
+
+	if len(errors) > 0 {
+		return PingResponseMultiError(errors)
+	}
 
 	return nil
 }
+
+// PingResponseMultiError is an error wrapping multiple validation errors
+// returned by PingResponse.ValidateAll() if the designated constraints aren't met.
+type PingResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PingResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PingResponseMultiError) AllErrors() []error { return m }
 
 // PingResponseValidationError is the validation error returned by
 // PingResponse.Validate if the designated constraints aren't met.
@@ -102,16 +138,60 @@ var _ interface {
 
 // Validate checks the field values on GetTemplateRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *GetTemplateRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetTemplateRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetTemplateRequestMultiError, or nil if none found.
+func (m *GetTemplateRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetTemplateRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	// no validation rules for Language
+	var errors []error
+
+	if _, ok := _GetTemplateRequest_Language_InLookup[m.GetLanguage()]; !ok {
+		err := GetTemplateRequestValidationError{
+			field:  "Language",
+			reason: "value must be in list [python2 python node rust ruby go c cpp fsharp csharp java kotlin scala php]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetTemplateRequestMultiError(errors)
+	}
 
 	return nil
 }
+
+// GetTemplateRequestMultiError is an error wrapping multiple validation errors
+// returned by GetTemplateRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GetTemplateRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetTemplateRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetTemplateRequestMultiError) AllErrors() []error { return m }
 
 // GetTemplateRequestValidationError is the validation error returned by
 // GetTemplateRequest.Validate if the designated constraints aren't met.
@@ -169,18 +249,70 @@ var _ interface {
 	ErrorName() string
 } = GetTemplateRequestValidationError{}
 
+var _GetTemplateRequest_Language_InLookup = map[string]struct{}{
+	"python2": {},
+	"python":  {},
+	"node":    {},
+	"rust":    {},
+	"ruby":    {},
+	"go":      {},
+	"c":       {},
+	"cpp":     {},
+	"fsharp":  {},
+	"csharp":  {},
+	"java":    {},
+	"kotlin":  {},
+	"scala":   {},
+	"php":     {},
+}
+
 // Validate checks the field values on GetTemplateResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *GetTemplateResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetTemplateResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetTemplateResponseMultiError, or nil if none found.
+func (m *GetTemplateResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetTemplateResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for Template
+
+	if len(errors) > 0 {
+		return GetTemplateResponseMultiError(errors)
+	}
 
 	return nil
 }
+
+// GetTemplateResponseMultiError is an error wrapping multiple validation
+// errors returned by GetTemplateResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetTemplateResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetTemplateResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetTemplateResponseMultiError) AllErrors() []error { return m }
 
 // GetTemplateResponseValidationError is the validation error returned by
 // GetTemplateResponse.Validate if the designated constraints aren't met.
@@ -239,19 +371,54 @@ var _ interface {
 } = GetTemplateResponseValidationError{}
 
 // Validate checks the field values on SupportedLanguage with the rules defined
-// in the proto definition for this message. If any rules are violated, an
-// error is returned.
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
 func (m *SupportedLanguage) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SupportedLanguage with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SupportedLanguageMultiError, or nil if none found.
+func (m *SupportedLanguage) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SupportedLanguage) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for LanguageCode
 
 	// no validation rules for DisplayName
 
+	if len(errors) > 0 {
+		return SupportedLanguageMultiError(errors)
+	}
+
 	return nil
 }
+
+// SupportedLanguageMultiError is an error wrapping multiple validation errors
+// returned by SupportedLanguage.ValidateAll() if the designated constraints
+// aren't met.
+type SupportedLanguageMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SupportedLanguageMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SupportedLanguageMultiError) AllErrors() []error { return m }
 
 // SupportedLanguageValidationError is the validation error returned by
 // SupportedLanguage.Validate if the designated constraints aren't met.
@@ -311,16 +478,49 @@ var _ interface {
 
 // Validate checks the field values on GetSupportedLanguagesResponse with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *GetSupportedLanguagesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetSupportedLanguagesResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetSupportedLanguagesResponseMultiError, or nil if none found.
+func (m *GetSupportedLanguagesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetSupportedLanguagesResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	for idx, item := range m.GetLanguages() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetSupportedLanguagesResponseValidationError{
+						field:  fmt.Sprintf("Languages[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetSupportedLanguagesResponseValidationError{
+						field:  fmt.Sprintf("Languages[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return GetSupportedLanguagesResponseValidationError{
 					field:  fmt.Sprintf("Languages[%v]", idx),
@@ -332,8 +532,29 @@ func (m *GetSupportedLanguagesResponse) Validate() error {
 
 	}
 
+	if len(errors) > 0 {
+		return GetSupportedLanguagesResponseMultiError(errors)
+	}
+
 	return nil
 }
+
+// GetSupportedLanguagesResponseMultiError is an error wrapping multiple
+// validation errors returned by GetSupportedLanguagesResponse.ValidateAll()
+// if the designated constraints aren't met.
+type GetSupportedLanguagesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetSupportedLanguagesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetSupportedLanguagesResponseMultiError) AllErrors() []error { return m }
 
 // GetSupportedLanguagesResponseValidationError is the validation error
 // returned by GetSupportedLanguagesResponse.Validate if the designated
@@ -393,19 +614,72 @@ var _ interface {
 } = GetSupportedLanguagesResponseValidationError{}
 
 // Validate checks the field values on CompileRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *CompileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CompileRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in CompileRequestMultiError,
+// or nil if none found.
+func (m *CompileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CompileRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	// no validation rules for Langauge
+	var errors []error
 
-	// no validation rules for Source
+	if _, ok := _CompileRequest_Language_InLookup[m.GetLanguage()]; !ok {
+		err := CompileRequestValidationError{
+			field:  "Language",
+			reason: "value must be in list [python2 python node rust ruby go c cpp fsharp csharp java kotlin scala php]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetSource()); l < 5 || l > 1024 {
+		err := CompileRequestValidationError{
+			field:  "Source",
+			reason: "value length must be between 5 and 1024 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return CompileRequestMultiError(errors)
+	}
 
 	return nil
 }
+
+// CompileRequestMultiError is an error wrapping multiple validation errors
+// returned by CompileRequest.ValidateAll() if the designated constraints
+// aren't met.
+type CompileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CompileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CompileRequestMultiError) AllErrors() []error { return m }
 
 // CompileRequestValidationError is the validation error returned by
 // CompileRequest.Validate if the designated constraints aren't met.
@@ -460,3 +734,124 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CompileRequestValidationError{}
+
+var _CompileRequest_Language_InLookup = map[string]struct{}{
+	"python2": {},
+	"python":  {},
+	"node":    {},
+	"rust":    {},
+	"ruby":    {},
+	"go":      {},
+	"c":       {},
+	"cpp":     {},
+	"fsharp":  {},
+	"csharp":  {},
+	"java":    {},
+	"kotlin":  {},
+	"scala":   {},
+	"php":     {},
+}
+
+// Validate checks the field values on CompileQueueResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CompileQueueResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CompileQueueResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CompileQueueResponseMultiError, or nil if none found.
+func (m *CompileQueueResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CompileQueueResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	if len(errors) > 0 {
+		return CompileQueueResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CompileQueueResponseMultiError is an error wrapping multiple validation
+// errors returned by CompileQueueResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CompileQueueResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CompileQueueResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CompileQueueResponseMultiError) AllErrors() []error { return m }
+
+// CompileQueueResponseValidationError is the validation error returned by
+// CompileQueueResponse.Validate if the designated constraints aren't met.
+type CompileQueueResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CompileQueueResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CompileQueueResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CompileQueueResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CompileQueueResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CompileQueueResponseValidationError) ErrorName() string {
+	return "CompileQueueResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CompileQueueResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCompileQueueResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CompileQueueResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CompileQueueResponseValidationError{}

@@ -8,6 +8,7 @@ package v1
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -35,6 +36,9 @@ type ConsumerServiceClient interface {
 	// code. The code is the value sent to the server when requesting to compile
 	// and run.
 	GetSupportedLanguages(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetSupportedLanguagesResponse, error)
+	// CompileQueueRequest is the core compile request endpoint. Calling into this
+	// will trigger the flow to run the user-submitted code.
+	CompileQueueRequest(ctx context.Context, in *CompileRequest, opts ...grpc.CallOption) (*CompileQueueResponse, error)
 }
 
 type consumerServiceClient struct {
@@ -72,6 +76,15 @@ func (c *consumerServiceClient) GetSupportedLanguages(ctx context.Context, in *e
 	return out, nil
 }
 
+func (c *consumerServiceClient) CompileQueueRequest(ctx context.Context, in *CompileRequest, opts ...grpc.CallOption) (*CompileQueueResponse, error) {
+	out := new(CompileQueueResponse)
+	err := c.cc.Invoke(ctx, "/content.consumer.v1.ConsumerService/CompileQueueRequest", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConsumerServiceServer is the server API for ConsumerService service.
 // All implementations should embed UnimplementedConsumerServiceServer
 // for forward compatibility
@@ -88,6 +101,9 @@ type ConsumerServiceServer interface {
 	// code. The code is the value sent to the server when requesting to compile
 	// and run.
 	GetSupportedLanguages(context.Context, *emptypb.Empty) (*GetSupportedLanguagesResponse, error)
+	// CompileQueueRequest is the core compile request endpoint. Calling into this
+	// will trigger the flow to run the user-submitted code.
+	CompileQueueRequest(context.Context, *CompileRequest) (*CompileQueueResponse, error)
 }
 
 // UnimplementedConsumerServiceServer should be embedded to have forward compatible implementations.
@@ -102,6 +118,9 @@ func (UnimplementedConsumerServiceServer) GetTemplate(context.Context, *GetTempl
 }
 func (UnimplementedConsumerServiceServer) GetSupportedLanguages(context.Context, *emptypb.Empty) (*GetSupportedLanguagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSupportedLanguages not implemented")
+}
+func (UnimplementedConsumerServiceServer) CompileQueueRequest(context.Context, *CompileRequest) (*CompileQueueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CompileQueueRequest not implemented")
 }
 
 // UnsafeConsumerServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -169,6 +188,24 @@ func _ConsumerService_GetSupportedLanguages_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConsumerService_CompileQueueRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsumerServiceServer).CompileQueueRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/content.consumer.v1.ConsumerService/CompileQueueRequest",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsumerServiceServer).CompileQueueRequest(ctx, req.(*CompileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConsumerService_ServiceDesc is the grpc.ServiceDesc for ConsumerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -187,6 +224,10 @@ var ConsumerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSupportedLanguages",
 			Handler:    _ConsumerService_GetSupportedLanguages_Handler,
+		},
+		{
+			MethodName: "CompileQueueRequest",
+			Handler:    _ConsumerService_CompileQueueRequest_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

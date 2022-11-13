@@ -1,9 +1,9 @@
 syntax = 'proto3';
 
+package content.consumer.v1;
+
 import "google/protobuf/empty.proto";
 import "validate/validate.proto";
-
-package content.consumer.v1;
 
 option go_package = "compile-and-run-sandbox/internal/gen/pb/consumer/v1";
 
@@ -23,6 +23,10 @@ service ConsumerService {
   // code. The code is the value sent to the server when requesting to compile
   // and run.
   rpc GetSupportedLanguages (google.protobuf.Empty) returns (GetSupportedLanguagesResponse) {}
+
+  // CompileQueueRequest is the core compile request endpoint. Calling into this
+  // will trigger the flow to run the user-submitted code.
+  rpc CompileQueueRequest (CompileRequest) returns (CompileQueueResponse) {}
 }
 
 // ########################
@@ -38,7 +42,24 @@ message PingResponse {
 // ########################
 
 message GetTemplateRequest {
-  string language = 1;
+  string language = 1 [(validate.rules).string = {
+    in: [
+      "python2",
+      "python",
+      "node",
+      "rust",
+      "ruby",
+      "go",
+      "c",
+      "cpp",
+      "fsharp",
+      "csharp",
+      "java",
+      "kotlin",
+      "scala",
+      "php"
+    ]
+  }];
 }
 
 message GetTemplateResponse {
@@ -52,10 +73,10 @@ message GetTemplateResponse {
 message SupportedLanguage {
   // The language code send during the compile request, this is not the same as
   // the display name. This is also the code used to get the template.
-  string languageCode = 1;
+  string language_code = 1;
   // The display name the user can be shown and will understand for example
   // the display name could be C# and the code would be csharp.
-  string displayName = 2;
+  string display_name = 2;
 }
 
 message GetSupportedLanguagesResponse {
@@ -67,7 +88,7 @@ message GetSupportedLanguagesResponse {
 // ########################
 
 message CompileRequest {
-  string langauge = 1  [(validate.rules).string = {
+  string language = 1 [(validate.rules).string = {
     in: [
       "python2",
       "python",
@@ -87,6 +108,19 @@ message CompileRequest {
   }];
 
   string source = 2 [(validate.rules).string = {min_len: 5, max_len: 1024}];
-  repeated string standardInData = 3;
-  repeated string expectedStandardOutData = 4;
+
+  // This array of strings will be written to the standard input of the code
+  // when executing. Each array item is a line which will be written one after
+  // another.
+  repeated string standard_in_data = 3;
+
+  // This is an array of expected output data, including data here that will
+  // result in a validation check on completion. If no items are added to the
+  // array then the status endpoint will return NoTest for the test status.
+  // Otherwise, a value related to the test result.
+  repeated string expected_standard_out_data = 4;
+}
+
+message CompileQueueResponse {
+  string id = 1;
 }

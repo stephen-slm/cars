@@ -1,7 +1,6 @@
 package routing
 
 import (
-	"encoding/json"
 	"net/http"
 
 	ut "github.com/go-playground/universal-translator"
@@ -16,7 +15,6 @@ import (
 	"compile-and-run-sandbox/internal/queue"
 	"compile-and-run-sandbox/internal/repository"
 	"compile-and-run-sandbox/internal/sandbox"
-	"compile-and-run-sandbox/internal/validation"
 )
 
 type CompilerHandlers struct {
@@ -25,79 +23,6 @@ type CompilerHandlers struct {
 	Translator  ut.Translator
 	Validator   *validator.Validate
 	Queue       queue.Queue
-}
-
-func (h CompilerHandlers) HandleCompileRequest(w http.ResponseWriter, r *http.Request) {
-	// Use http.MaxBytesReader to enforce a maximum read of 1MB.
-	r.Body = http.MaxBytesReader(w, r.Body, 1_048576*1)
-
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
-
-	var direct CompileRequest
-
-	if err := dec.Decode(&direct); err != nil {
-		handleDecodeError(w, err)
-		return
-	}
-
-	if err := h.Validator.Struct(&direct); err != nil {
-		log.Error().Err(err)
-
-		handleJSONResponse(w, CompileErrorResponse{
-			Errors: validation.TranslateError(err, h.Translator),
-			Code:   0,
-		}, http.StatusBadRequest)
-	}
-
-	compiler := sandbox.Compilers[direct.Language]
-	requestID := uuid.NewString()
-
-	_ = h.FileHandler.WriteFile(&files.File{
-		ID:   requestID,
-		Name: compiler.SourceFile,
-		Data: []byte(direct.SourceCode),
-	})
-
-	bytes, _ := json.Marshal(queue.CompileMessage{
-		ID:                 requestID,
-		Language:           direct.Language,
-		StdinData:          direct.StdinData,
-		ExpectedStdoutData: direct.ExpectedStdoutData,
-	})
-
-	err := h.Queue.SubmitMessageToQueue(bytes)
-
-	if err != nil {
-		log.Error().Err(err)
-
-		handleJSONResponse(w, CompileErrorResponse{
-			Errors: []string{"failed to execute compile request"},
-			Code:   0,
-		}, http.StatusInternalServerError)
-
-		return
-	}
-
-	dbErr := h.Repo.InsertExecution(&repository.Execution{
-		ID:         requestID,
-		Language:   direct.Language,
-		Status:     sandbox.NotRan.String(),
-		TestStatus: sandbox.TestNotRan.String(),
-	})
-
-	if dbErr != nil {
-		log.Error().Err(dbErr).Msg("failed to create execution record")
-
-		handleJSONResponse(w, CompileErrorResponse{
-			Errors: []string{"failed to create execution record"},
-			Code:   0,
-		}, http.StatusInternalServerError)
-
-		return
-	}
-
-	handleJSONResponse(w, QueueCompileResponse{ID: requestID}, http.StatusOK)
 }
 
 func (h CompilerHandlers) HandleGetCompileResponse(w http.ResponseWriter, r *http.Request) {

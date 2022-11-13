@@ -11,14 +11,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type CompileRequest struct {
-	Language   string `json:"language" validate:"required,oneof=python2 python node rust ruby go c cpp fsharp csharp java kotlin scala php"`
-	SourceCode string `json:"source_code" validate:"required"`
-
-	StdinData          []string `json:"stdin_data" validate:"required"`
-	ExpectedStdoutData []string `json:"expected_stdout_data" validate:"required"`
-}
-
 type CompileInfoResponse struct {
 	Status     string `json:"status"`
 	TestStatus string `json:"test_status"`
@@ -31,10 +23,6 @@ type CompileInfoResponse struct {
 	Output         string `json:"output"`
 	OutputErr      string `json:"output_error"`
 	CompilerOutput string `json:"compiler_output,omitempty"`
-}
-
-type QueueCompileResponse struct {
-	ID string `json:"id"`
 }
 
 type CompileErrorResponse struct {

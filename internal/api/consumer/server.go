@@ -1,18 +1,23 @@
 package consumer
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strings"
+
 	"compile-and-run-sandbox/internal/files"
 	consumerv1 "compile-and-run-sandbox/internal/gen/pb/content/consumer/v1"
 	"compile-and-run-sandbox/internal/queue"
 	"compile-and-run-sandbox/internal/repository"
 	"compile-and-run-sandbox/internal/sandbox"
-	"context"
-	"fmt"
+
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"sort"
-	"strings"
 )
 
 type Server struct {
@@ -23,6 +28,47 @@ type Server struct {
 	Translator  ut.Translator
 	Validator   *validator.Validate
 	Queue       queue.Queue
+}
+
+func (s Server) CompileQueueRequest(_ context.Context, direct *consumerv1.CompileRequest) (*consumerv1.CompileQueueResponse, error) {
+	compiler := sandbox.Compilers[direct.Language]
+	requestID := uuid.NewString()
+
+	_ = s.FileHandler.WriteFile(&files.File{
+		ID:   requestID,
+		Name: compiler.SourceFile,
+		Data: []byte(direct.Source),
+	})
+
+	bytes, _ := json.Marshal(queue.CompileMessage{
+		ID:                 requestID,
+		Language:           direct.Language,
+		StdinData:          direct.StandardInData,
+		ExpectedStdoutData: direct.ExpectedStandardOutData,
+	})
+
+	err := s.Queue.SubmitMessageToQueue(bytes)
+
+	if err != nil {
+		log.Error().Err(err)
+		return nil, fmt.Errorf("failed to execute compile request")
+	}
+
+	dbErr := s.Repo.InsertExecution(&repository.Execution{
+		ID:         requestID,
+		Language:   direct.Language,
+		Status:     sandbox.NotRan.String(),
+		TestStatus: sandbox.TestNotRan.String(),
+	})
+
+	if dbErr != nil {
+		log.Error().Err(dbErr).Msg("failed to create execution record")
+		return nil, fmt.Errorf("failed to create execution record")
+	}
+
+	return &consumerv1.CompileQueueResponse{
+		Id: requestID,
+	}, nil
 }
 
 func (s Server) GetSupportedLanguages(_ context.Context, _ *emptypb.Empty) (*consumerv1.GetSupportedLanguagesResponse, error) {
