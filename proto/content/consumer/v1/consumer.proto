@@ -1,0 +1,10 @@
+syntax = 'proto3';
+
+package content.consumer.v1;
+
+option go_package = "github.com/stephensli/cars/internal/gen/pb/consumer/v1";
+
+
+service ConsumerService {
+
+}

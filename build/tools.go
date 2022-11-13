@@ -11,4 +11,13 @@ import (
 	_ "github.com/jstemmer/go-junit-report"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/tools/cmd/stringer"
+
+	_ "github.com/bufbuild/buf/cmd/buf"
+	_ "github.com/bufbuild/buf/cmd/protoc-gen-buf-breaking"
+	_ "github.com/bufbuild/buf/cmd/protoc-gen-buf-lint"
+	_ "github.com/envoyproxy/protoc-gen-validate"
+	_ "github.com/fullstorydev/grpcurl/cmd/grpcurl"
+	_ "github.com/golang/mock/mockgen"
+	_ "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
+	_ "google.golang.org/protobuf/cmd/protoc-gen-go"
 )

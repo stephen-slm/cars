@@ -31,11 +31,21 @@ generate: install-tools ## Generate mocks, florence features and other code.
 
 .PHONY: fmt
 fmt: install-tools ## Format code.
-	@$(GOBIN)/goimports -w -local "github.com/deliveroo/" $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+	@$(GOBIN)/goimports -w -local "github.com/stephensli/" $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 .PHONY: lint
 lint: install-tools ## Lint code.
 	golangci-lint run --config ./build/.golangci.yml ./...
+
+
+.PHONY: generate-proto
+generate-proto: install-tools ## Generate protobufs.
+	bash ./proto/gen.sh
+	@$(MAKE) fmt
+
+.PHONY: lint-proto
+lint-proto: install-tools ## Lint protobufs.
+	$(GOBIN)/buf lint
 
 .PHONY: test
 test: ## Run all tests.
