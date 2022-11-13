@@ -1,4 +1,4 @@
-FROM golang:1.19-alpine as BUILDER
+FROM golang:1.19-buster as BUILDER
 
 WORKDIR /app
 
@@ -10,9 +10,9 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM rust:1.61-alpine
+FROM rust:1.65-buster
 
 COPY --from=BUILDER /runner /runner
 
-RUN apt-get  update
+RUN apt-get update
 RUN apt-get install coreutils

@@ -57,7 +57,7 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 | Go       | 1.18.x       | https://go.dev               | ✅️   | ✅️     |
 | Haskell  | 9.x.x        | https://haskell.org          | ✅️   | ❌     |
 | Ruby     | 3.1.x        | https://ruby-lang.org        | ✅️   | ✅️     |
-| Rust     | 1.61.x       | https://rust-lang.org        | ✅️   | ❌     |
+| Rust     | 1.65.x       | https://rust-lang.org        | ✅️   | ✅️     |
 | PHP      | 8.1.x        | https://www.php.net/         | ✅️   | ✅️     |
 
 ## gVisor (https://gvisor.dev/)

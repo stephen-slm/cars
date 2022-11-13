@@ -1,0 +1,4 @@
+fn main() {
+    let a = String::from_utf8(vec![b'X'; 1024*1024*55]);
+    println!("Hello, World! {:?}", a);
+}
