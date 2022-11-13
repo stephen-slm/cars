@@ -17,7 +17,7 @@ ARG KOTLIN_VERSION="1.7.0"
 
 # Installing basic packages
 RUN apt-get update && \
-	apt-get install -y zip unzip curl && \
+	apt-get install -y zip unzip curl coreutils && \
 	rm -rf /var/lib/apt/lists/* && \
 	rm -rf /tmp/*
 

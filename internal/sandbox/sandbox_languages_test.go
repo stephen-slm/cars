@@ -206,5 +206,57 @@ func TestCompleteTimeBoundExecution(t *testing.T) {
 }
 
 func TestCompleteMemoryBoundExecution(t *testing.T) {
+	manager := setup(t, context.Background())
 
+	for languageName, compiler := range Compilers {
+		t.Run(fmt.Sprintf("memory execution check for %s", languageName), func(t *testing.T) {
+			languageName := languageName
+			compiler := compiler
+
+			t.Parallel()
+
+			pathingUUID := uuid.New()
+
+			request := Request{
+				ID: uuid.New().String(),
+				ExecutionProfile: &Profile{
+					AutoRemove:      true,
+					CodeTimeout:     time.Second,
+					CompileTimeout:  time.Second * 5,
+					ContainerMemory: memory.Gigabyte,
+					ExecutionMemory: memory.Megabyte * 50,
+				},
+
+				Path: filepath.Join(os.TempDir(), "executions", "raw", pathingUUID.String()),
+
+				// Pull the source code from a pre-generated list of possible
+				// values for complex implementations. Ensuring that we wrap
+				// the correct implementations if needed.
+				SourceCode: mustGetCompilerTestTemplateByLanguage(t, "memory", languageName),
+				Compiler:   compiler,
+
+				// No tests are checked in this example.
+				Test: nil,
+			}
+
+			id, complete, err := manager.AddContainer(context.Background(), &request)
+
+			assert.NoError(t, err)
+			assert.NotNil(t, id)
+
+			<-complete
+
+			result := manager.getContainer(id).GetResponse()
+
+			// Verify that it finished and we had no tests.
+			assert.Equal(t, MemoryConstraintExceeded.String(), result.Status.String(),
+				"output: %s\noutput-error: %s\ncompiler: %s",
+				strings.Join(result.Output, "\n"),
+				strings.Join(result.OutputError, "\n"),
+				strings.Join(result.CompilerOutput, "\n"),
+			)
+
+			assert.NoError(t, manager.RemoveContainer(context.Background(), id, false))
+		})
+	}
 }

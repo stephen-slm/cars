@@ -1,0 +1,4 @@
+arr = bytearray(1024*1024*50)
+
+for byte in arr:
+    print(byte)

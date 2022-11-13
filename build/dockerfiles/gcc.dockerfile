@@ -10,7 +10,9 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM gcc:12-bullseye
+FROM gcc:9.5-buster
 
 COPY --from=BUILDER /runner /runner
+
+RUN apt-get update
 RUN apt-get install coreutils

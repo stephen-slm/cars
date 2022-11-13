@@ -1,0 +1,12 @@
+using System;
+
+namespace Solution
+{
+    internal class Solution
+    {
+        static void Main(string[] args)
+        {
+            string myString = new string('*', 100000 * 200);
+        }
+    }
+}

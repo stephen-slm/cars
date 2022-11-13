@@ -424,6 +424,10 @@ func (d *Container) GetResponse() *Response {
 		}
 	}
 
+	if d.executionResponse == nil {
+		d.executionResponse = &ExecutionResponse{}
+	}
+
 	return &Response{
 		CompilerOutput: d.executionResponse.CompilerOutput,
 		Output:         d.executionResponse.Output,
