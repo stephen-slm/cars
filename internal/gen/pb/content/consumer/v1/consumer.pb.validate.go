@@ -391,3 +391,72 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetSupportedLanguagesResponseValidationError{}
+
+// Validate checks the field values on CompileRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
+func (m *CompileRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Langauge
+
+	// no validation rules for Source
+
+	return nil
+}
+
+// CompileRequestValidationError is the validation error returned by
+// CompileRequest.Validate if the designated constraints aren't met.
+type CompileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CompileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CompileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CompileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CompileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CompileRequestValidationError) ErrorName() string { return "CompileRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e CompileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCompileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CompileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CompileRequestValidationError{}

@@ -24,13 +24,16 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConsumerServiceClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PingResponse, error)
-	// GetTemplate is designed to allow consumers of the platform to serve the user with a template they can start from.
-	// This is more important for languages that require selective formatting or a main function. An example of these
-	// languages would be C++, and C.
+	// GetTemplate is designed to allow consumers of the platform to serve the
+	// user with a template they can start from. This is more important for
+	// languages that require selective formatting or a main function. An example
+	// of these languages would be C++, and C.
 	GetTemplate(ctx context.Context, in *GetTemplateRequest, opts ...grpc.CallOption) (*GetTemplateResponse, error)
-	// GetSupportedLanguages will return a list of languages that can be exposed to the user. This response contains a
-	// display name for the language that will contain compiler information if important and will also return the code.
-	// The code is the value sent to the server when requesting to compile and run.
+	// GetSupportedLanguages will return a list of languages that can be exposed
+	// to the user. This response contains a display name for the language that
+	// will contain compiler information if important and will also return the
+	// code. The code is the value sent to the server when requesting to compile
+	// and run.
 	GetSupportedLanguages(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetSupportedLanguagesResponse, error)
 }
 
@@ -74,13 +77,16 @@ func (c *consumerServiceClient) GetSupportedLanguages(ctx context.Context, in *e
 // for forward compatibility
 type ConsumerServiceServer interface {
 	Ping(context.Context, *emptypb.Empty) (*PingResponse, error)
-	// GetTemplate is designed to allow consumers of the platform to serve the user with a template they can start from.
-	// This is more important for languages that require selective formatting or a main function. An example of these
-	// languages would be C++, and C.
+	// GetTemplate is designed to allow consumers of the platform to serve the
+	// user with a template they can start from. This is more important for
+	// languages that require selective formatting or a main function. An example
+	// of these languages would be C++, and C.
 	GetTemplate(context.Context, *GetTemplateRequest) (*GetTemplateResponse, error)
-	// GetSupportedLanguages will return a list of languages that can be exposed to the user. This response contains a
-	// display name for the language that will contain compiler information if important and will also return the code.
-	// The code is the value sent to the server when requesting to compile and run.
+	// GetSupportedLanguages will return a list of languages that can be exposed
+	// to the user. This response contains a display name for the language that
+	// will contain compiler information if important and will also return the
+	// code. The code is the value sent to the server when requesting to compile
+	// and run.
 	GetSupportedLanguages(context.Context, *emptypb.Empty) (*GetSupportedLanguagesResponse, error)
 }
 

@@ -1,5 +1,8 @@
 syntax = 'proto3';
+
 import "google/protobuf/empty.proto";
+import "validate/validate.proto";
+
 package content.consumer.v1;
 
 option go_package = "compile-and-run-sandbox/internal/gen/pb/consumer/v1";
@@ -64,8 +67,26 @@ message GetSupportedLanguagesResponse {
 // ########################
 
 message CompileRequest {
-  string langauge = 1;
-  string source = 2;
+  string langauge = 1  [(validate.rules).string = {
+    in: [
+      "python2",
+      "python",
+      "node",
+      "rust",
+      "ruby",
+      "go",
+      "c",
+      "cpp",
+      "fsharp",
+      "csharp",
+      "java",
+      "kotlin",
+      "scala",
+      "php"
+    ]
+  }];
+
+  string source = 2 [(validate.rules).string = {min_len: 5, max_len: 1024}];
   repeated string standardInData = 3;
   repeated string expectedStandardOutData = 4;
 }
