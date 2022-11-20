@@ -4,10 +4,10 @@
 ## Table of Contents
 
 - [content/consumer/v1/consumer.proto](#content_consumer_v1_consumer-proto)
-    - [CompileQueueResponse](#content-consumer-v1-CompileQueueResponse)
-    - [CompileRequest](#content-consumer-v1-CompileRequest)
-    - [CompileResultRequest](#content-consumer-v1-CompileResultRequest)
-    - [CompileResultResponse](#content-consumer-v1-CompileResultResponse)
+    - [CreateCompileRequest](#content-consumer-v1-CreateCompileRequest)
+    - [CreateCompileResponse](#content-consumer-v1-CreateCompileResponse)
+    - [GetCompileResultRequest](#content-consumer-v1-GetCompileResultRequest)
+    - [GetCompileResultResponse](#content-consumer-v1-GetCompileResultResponse)
     - [GetSupportedLanguagesResponse](#content-consumer-v1-GetSupportedLanguagesResponse)
     - [GetTemplateRequest](#content-consumer-v1-GetTemplateRequest)
     - [GetTemplateResponse](#content-consumer-v1-GetTemplateResponse)
@@ -27,25 +27,10 @@
 
 
 
-<a name="content-consumer-v1-CompileQueueResponse"></a>
+<a name="content-consumer-v1-CreateCompileRequest"></a>
 
-### CompileQueueResponse
-The response when requesting a compiled request via the queue.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The reference ID of the compile request. Use later to retrieve updated information regarding the state of the execution. |
-
-
-
-
-
-
-<a name="content-consumer-v1-CompileRequest"></a>
-
-### CompileRequest
-
+### CreateCompileRequest
+The request to compile and run code.
 
 
 | Field | Type | Label | Description |
@@ -60,9 +45,24 @@ The response when requesting a compiled request via the queue.
 
 
 
-<a name="content-consumer-v1-CompileResultRequest"></a>
+<a name="content-consumer-v1-CreateCompileResponse"></a>
 
-### CompileResultRequest
+### CreateCompileResponse
+The response when requesting a compiled request via the queue.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The reference ID of the compile request. Use later to retrieve updated information regarding the state of the execution. |
+
+
+
+
+
+
+<a name="content-consumer-v1-GetCompileResultRequest"></a>
+
+### GetCompileResultRequest
 Compile result request can be used to request updated information about the
 state or result of the compile request.
 
@@ -76,10 +76,10 @@ state or result of the compile request.
 
 
 
-<a name="content-consumer-v1-CompileResultResponse"></a>
+<a name="content-consumer-v1-GetCompileResultResponse"></a>
 
-### CompileResultResponse
-
+### GetCompileResultResponse
+The details of a compile request.
 
 
 | Field | Type | Label | Description |
@@ -163,7 +163,7 @@ The response from the ping.
 <a name="content-consumer-v1-SupportedLanguage"></a>
 
 ### SupportedLanguage
-
+A possible supported language information.
 
 
 | Field | Type | Label | Description |
@@ -185,15 +185,15 @@ The response from the ping.
 <a name="content-consumer-v1-ConsumerService"></a>
 
 ### ConsumerService
-
+The main consumer service to communicate with cars.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| Ping | [.google.protobuf.Empty](#google-protobuf-Empty) | [PingResponse](#content-consumer-v1-PingResponse) |  |
+| Ping | [.google.protobuf.Empty](#google-protobuf-Empty) | [PingResponse](#content-consumer-v1-PingResponse) | Ping is used by internal services to ensure the service is running. |
 | GetTemplate | [GetTemplateRequest](#content-consumer-v1-GetTemplateRequest) | [GetTemplateResponse](#content-consumer-v1-GetTemplateResponse) | GetTemplate is designed to allow consumers of the platform to serve the user with a template they can start from. This is more important for languages that require selective formatting or a main function. An example of these languages would be C&#43;&#43;, and C. |
 | GetSupportedLanguages | [.google.protobuf.Empty](#google-protobuf-Empty) | [GetSupportedLanguagesResponse](#content-consumer-v1-GetSupportedLanguagesResponse) | GetSupportedLanguages will return a list of languages that can be exposed to the user. This response contains a display name for the language that will contain compiler information if important and will also return the code. The code is the value sent to the server when requesting to compile and run. |
-| CreateCompileRequest | [CompileRequest](#content-consumer-v1-CompileRequest) | [CompileQueueResponse](#content-consumer-v1-CompileQueueResponse) | CompileQueueRequest is the core compile request endpoint. Calling into this will trigger the flow to run the user-submitted code. |
-| GetCompileResultRequest | [CompileResultRequest](#content-consumer-v1-CompileResultRequest) | [CompileResultResponse](#content-consumer-v1-CompileResultResponse) | GetCompileResultRequest is required to be called after requesting to compile, all details about the running state and the final output of the compiling and execution are from this. |
+| CreateCompile | [CreateCompileRequest](#content-consumer-v1-CreateCompileRequest) | [CreateCompileResponse](#content-consumer-v1-CreateCompileResponse) | CompileQueueRequest is the core compile request endpoint. Calling into this will trigger the flow to run the user-submitted code. |
+| GetCompileResult | [GetCompileResultRequest](#content-consumer-v1-GetCompileResultRequest) | [GetCompileResultResponse](#content-consumer-v1-GetCompileResultResponse) | GetCompileResultRequest is required to be called after requesting to compile, all details about the running state and the final output of the compiling and execution are from this. |
 
  
 

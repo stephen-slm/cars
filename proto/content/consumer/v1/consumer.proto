@@ -8,7 +8,9 @@ import "validate/validate.proto";
 option go_package = "compile-and-run-sandbox/internal/gen/pb/consumer/v1";
 
 
+// The main consumer service to communicate with cars.
 service ConsumerService {
+  // Ping is used by internal services to ensure the service is running.
   rpc Ping (google.protobuf.Empty) returns (PingResponse) {}
 
   // GetTemplate is designed to allow consumers of the platform to serve the
@@ -26,12 +28,12 @@ service ConsumerService {
 
   // CompileQueueRequest is the core compile request endpoint. Calling into this
   // will trigger the flow to run the user-submitted code.
-  rpc CreateCompileRequest (CompileRequest) returns (CompileQueueResponse) {}
+  rpc CreateCompile (CreateCompileRequest) returns (CreateCompileResponse) {}
 
   // GetCompileResultRequest is required to be called after requesting to
   // compile, all details about the running state and the final output
   // of the compiling and execution are from this.
-  rpc GetCompileResultRequest (CompileResultRequest) returns (CompileResultResponse) {}
+  rpc GetCompileResult (GetCompileResultRequest) returns (GetCompileResultResponse) {}
 }
 
 // ########################
@@ -82,6 +84,7 @@ message GetTemplateResponse {
 // # Supported Languages ##
 // ########################
 
+// A possible supported language information.
 message SupportedLanguage {
   // The language code send during the compile request, this is not the same as
   // the display name. This is also the code used to get the template.
@@ -101,7 +104,8 @@ message GetSupportedLanguagesResponse {
 // # Compile Request     ##
 // ########################
 
-message CompileRequest {
+// The request to compile and run code.
+message CreateCompileRequest {
   // The target language that is being sent. Incorrectly setting this will
   // result in a faulted request.
   string language = 1 [(validate.rules).string = {
@@ -141,7 +145,7 @@ message CompileRequest {
 }
 
 // The response when requesting a compiled request via the queue.
-message CompileQueueResponse {
+message CreateCompileResponse {
   // The reference ID of the compile request. Use later to retrieve updated
   // information regarding the state of the execution.
   string id = 1;
@@ -153,13 +157,14 @@ message CompileQueueResponse {
 
 // Compile result request can be used to request updated information about the
 // state or result of the compile request.
-message CompileResultRequest {
+message GetCompileResultRequest {
   // The id of the request, this value would have been returned by the compile
   // execution request.
   string id = 1;
 }
 
-message CompileResultResponse {
+// The details of a compile request.
+message GetCompileResultResponse {
   // The language which was used in to compile and execute request. This will
   // match the request language.
   string language = 1;

@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConsumerServiceClient interface {
+	// Ping is used by internal services to ensure the service is running.
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PingResponse, error)
 	// GetTemplate is designed to allow consumers of the platform to serve the
 	// user with a template they can start from. This is more important for
@@ -38,11 +39,11 @@ type ConsumerServiceClient interface {
 	GetSupportedLanguages(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetSupportedLanguagesResponse, error)
 	// CompileQueueRequest is the core compile request endpoint. Calling into this
 	// will trigger the flow to run the user-submitted code.
-	CreateCompileRequest(ctx context.Context, in *CompileRequest, opts ...grpc.CallOption) (*CompileQueueResponse, error)
+	CreateCompile(ctx context.Context, in *CreateCompileRequest, opts ...grpc.CallOption) (*CreateCompileResponse, error)
 	// GetCompileResultRequest is required to be called after requesting to
 	// compile, all details about the running state and the final output
 	// of the compiling and execution are from this.
-	GetCompileResultRequest(ctx context.Context, in *CompileResultRequest, opts ...grpc.CallOption) (*CompileResultResponse, error)
+	GetCompileResult(ctx context.Context, in *GetCompileResultRequest, opts ...grpc.CallOption) (*GetCompileResultResponse, error)
 }
 
 type consumerServiceClient struct {
@@ -80,18 +81,18 @@ func (c *consumerServiceClient) GetSupportedLanguages(ctx context.Context, in *e
 	return out, nil
 }
 
-func (c *consumerServiceClient) CreateCompileRequest(ctx context.Context, in *CompileRequest, opts ...grpc.CallOption) (*CompileQueueResponse, error) {
-	out := new(CompileQueueResponse)
-	err := c.cc.Invoke(ctx, "/content.consumer.v1.ConsumerService/CreateCompileRequest", in, out, opts...)
+func (c *consumerServiceClient) CreateCompile(ctx context.Context, in *CreateCompileRequest, opts ...grpc.CallOption) (*CreateCompileResponse, error) {
+	out := new(CreateCompileResponse)
+	err := c.cc.Invoke(ctx, "/content.consumer.v1.ConsumerService/CreateCompile", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *consumerServiceClient) GetCompileResultRequest(ctx context.Context, in *CompileResultRequest, opts ...grpc.CallOption) (*CompileResultResponse, error) {
-	out := new(CompileResultResponse)
-	err := c.cc.Invoke(ctx, "/content.consumer.v1.ConsumerService/GetCompileResultRequest", in, out, opts...)
+func (c *consumerServiceClient) GetCompileResult(ctx context.Context, in *GetCompileResultRequest, opts ...grpc.CallOption) (*GetCompileResultResponse, error) {
+	out := new(GetCompileResultResponse)
+	err := c.cc.Invoke(ctx, "/content.consumer.v1.ConsumerService/GetCompileResult", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +103,7 @@ func (c *consumerServiceClient) GetCompileResultRequest(ctx context.Context, in 
 // All implementations should embed UnimplementedConsumerServiceServer
 // for forward compatibility
 type ConsumerServiceServer interface {
+	// Ping is used by internal services to ensure the service is running.
 	Ping(context.Context, *emptypb.Empty) (*PingResponse, error)
 	// GetTemplate is designed to allow consumers of the platform to serve the
 	// user with a template they can start from. This is more important for
@@ -116,11 +118,11 @@ type ConsumerServiceServer interface {
 	GetSupportedLanguages(context.Context, *emptypb.Empty) (*GetSupportedLanguagesResponse, error)
 	// CompileQueueRequest is the core compile request endpoint. Calling into this
 	// will trigger the flow to run the user-submitted code.
-	CreateCompileRequest(context.Context, *CompileRequest) (*CompileQueueResponse, error)
+	CreateCompile(context.Context, *CreateCompileRequest) (*CreateCompileResponse, error)
 	// GetCompileResultRequest is required to be called after requesting to
 	// compile, all details about the running state and the final output
 	// of the compiling and execution are from this.
-	GetCompileResultRequest(context.Context, *CompileResultRequest) (*CompileResultResponse, error)
+	GetCompileResult(context.Context, *GetCompileResultRequest) (*GetCompileResultResponse, error)
 }
 
 // UnimplementedConsumerServiceServer should be embedded to have forward compatible implementations.
@@ -136,11 +138,11 @@ func (UnimplementedConsumerServiceServer) GetTemplate(context.Context, *GetTempl
 func (UnimplementedConsumerServiceServer) GetSupportedLanguages(context.Context, *emptypb.Empty) (*GetSupportedLanguagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSupportedLanguages not implemented")
 }
-func (UnimplementedConsumerServiceServer) CreateCompileRequest(context.Context, *CompileRequest) (*CompileQueueResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateCompileRequest not implemented")
+func (UnimplementedConsumerServiceServer) CreateCompile(context.Context, *CreateCompileRequest) (*CreateCompileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateCompile not implemented")
 }
-func (UnimplementedConsumerServiceServer) GetCompileResultRequest(context.Context, *CompileResultRequest) (*CompileResultResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCompileResultRequest not implemented")
+func (UnimplementedConsumerServiceServer) GetCompileResult(context.Context, *GetCompileResultRequest) (*GetCompileResultResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCompileResult not implemented")
 }
 
 // UnsafeConsumerServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -208,38 +210,38 @@ func _ConsumerService_GetSupportedLanguages_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ConsumerService_CreateCompileRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CompileRequest)
+func _ConsumerService_CreateCompile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCompileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConsumerServiceServer).CreateCompileRequest(ctx, in)
+		return srv.(ConsumerServiceServer).CreateCompile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/content.consumer.v1.ConsumerService/CreateCompileRequest",
+		FullMethod: "/content.consumer.v1.ConsumerService/CreateCompile",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConsumerServiceServer).CreateCompileRequest(ctx, req.(*CompileRequest))
+		return srv.(ConsumerServiceServer).CreateCompile(ctx, req.(*CreateCompileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ConsumerService_GetCompileResultRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CompileResultRequest)
+func _ConsumerService_GetCompileResult_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCompileResultRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConsumerServiceServer).GetCompileResultRequest(ctx, in)
+		return srv.(ConsumerServiceServer).GetCompileResult(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/content.consumer.v1.ConsumerService/GetCompileResultRequest",
+		FullMethod: "/content.consumer.v1.ConsumerService/GetCompileResult",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConsumerServiceServer).GetCompileResultRequest(ctx, req.(*CompileResultRequest))
+		return srv.(ConsumerServiceServer).GetCompileResult(ctx, req.(*GetCompileResultRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -264,12 +266,12 @@ var ConsumerService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ConsumerService_GetSupportedLanguages_Handler,
 		},
 		{
-			MethodName: "CreateCompileRequest",
-			Handler:    _ConsumerService_CreateCompileRequest_Handler,
+			MethodName: "CreateCompile",
+			Handler:    _ConsumerService_CreateCompile_Handler,
 		},
 		{
-			MethodName: "GetCompileResultRequest",
-			Handler:    _ConsumerService_GetCompileResultRequest_Handler,
+			MethodName: "GetCompileResult",
+			Handler:    _ConsumerService_GetCompileResult_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
