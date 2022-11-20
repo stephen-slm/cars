@@ -33,7 +33,7 @@ type Server struct {
 	Queue       queue.Queue
 }
 
-func (s Server) GetCompileResultRequest(ctx context.Context, in *consumerv1.CompileResultRequest) (*consumerv1.CompileResultResponse, error) {
+func (s Server) GetCompileResultRequest(_ context.Context, in *consumerv1.GetCompileResultRequest) (*consumerv1.GetCompileResultResponse, error) {
 	parsedIDValue, err := uuid.Parse(in.GetId())
 
 	if err != nil {
@@ -46,7 +46,7 @@ func (s Server) GetCompileResultRequest(ctx context.Context, in *consumerv1.Comp
 		return nil, fmt.Errorf("the execution does not exist by the provided id")
 	}
 
-	resp := &consumerv1.CompileResultResponse{
+	resp := &consumerv1.GetCompileResultResponse{
 		Status:          execution.Status,
 		TestStatus:      execution.TestStatus,
 		CompileMs:       execution.CompileMs,
@@ -77,7 +77,7 @@ func (s Server) GetCompileResultRequest(ctx context.Context, in *consumerv1.Comp
 	return resp, nil
 }
 
-func (s Server) CreateCompileRequest(_ context.Context, direct *consumerv1.CompileRequest) (*consumerv1.CompileQueueResponse, error) {
+func (s Server) CreateCompileRequest(_ context.Context, direct *consumerv1.CreateCompileRequest) (*consumerv1.CreateCompileResponse, error) {
 	compiler := sandbox.Compilers[direct.Language]
 	requestID := uuid.NewString()
 
@@ -113,7 +113,7 @@ func (s Server) CreateCompileRequest(_ context.Context, direct *consumerv1.Compi
 		return nil, fmt.Errorf("failed to create execution record")
 	}
 
-	return &consumerv1.CompileQueueResponse{
+	return &consumerv1.CreateCompileResponse{
 		Id: requestID,
 	}, nil
 }
