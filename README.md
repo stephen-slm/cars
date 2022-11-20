@@ -53,7 +53,7 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 | NodeJs   | 16.x.x       | https://nodejs.org           | ✅️   | ✅️     |
 | Python2  | 2.7.x        | https://pypy.org             | ✅️   | ✅️     |
 | Python3  | 3.9.x        | https://pypy.org             | ✅️   | ✅️     |
-| Go       | 1.18.x       | https://go.dev               | ✅️   | ✅️     |
+| Go       | 1.19.x       | https://go.dev               | ✅️   | ✅️     |
 | Ruby     | 3.1.x        | https://ruby-lang.org        | ✅️   | ✅️     |
 | Rust     | 1.65.x       | https://rust-lang.org        | ✅️   | ✅️     |
 | PHP      | 8.1.x        | https://www.php.net/         | ✅️   | ✅️     |
