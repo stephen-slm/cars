@@ -221,7 +221,7 @@ func TestCompleteMemoryBoundExecution(t *testing.T) {
 				ID: uuid.New().String(),
 				ExecutionProfile: &Profile{
 					AutoRemove:      true,
-					CodeTimeout:     time.Second,
+					CodeTimeout:     time.Second * 2,
 					CompileTimeout:  time.Second * 5,
 					ContainerMemory: memory.Gigabyte,
 					ExecutionMemory: memory.Megabyte * 50,
