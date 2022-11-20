@@ -277,16 +277,6 @@ var content embed.FS
 // the data should be small so templates will be in memory always.
 var CompilerTemplate = map[string]string{}
 
-// mustGetCompilerTemplateByLanguage will return the language compiler template
-// for the given provided language or panic.
-func mustGetCompilerTemplateByLanguage(language string) string {
-	if template, ok := CompilerTemplate[strings.ToLower(language)]; ok {
-		return template
-	}
-
-	panic("language compiler template does not exist for language: " + language)
-}
-
 var once sync.Once
 
 func LoadEmbeddedTemplateFiles() {

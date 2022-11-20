@@ -6,12 +6,23 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/client"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 )
+
+// mustGetCompilerTemplateByLanguage will return the language compiler template
+// for the given provided language or panic.
+func mustGetCompilerTemplateByLanguage(language string) string {
+	if template, ok := CompilerTemplate[strings.ToLower(language)]; ok {
+		return template
+	}
+
+	panic("language compiler template does not exist for language: " + language)
+}
 
 type SandboxSuite struct {
 	ctx context.Context

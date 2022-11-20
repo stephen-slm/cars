@@ -5,8 +5,18 @@ install-hooks: ## Install git hooks
 	@sh ./scripts/install-hooks.sh
 
 
-install-tools: ## Install all tools into bin directory.
-	@cat build/tools.go | grep "_" | awk '{print $$2}' | xargs go install
+.PHONY: install-tools
+install-tools: $(GOBIN) ## Install all tools into bin directory.
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+	@go install github.com/incu6us/goimports-reviser/v3@v3.1.1
+	@go install mvdan.cc/gofumpt@v0.4.0
+	@go install github.com/bufbuild/buf/cmd/buf@v1.9.0
+	@go install github.com/envoyproxy/protoc-gen-validate@v0.6.13
+
+	@go install github.com/golang/mock/mockgen
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go
+	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	@go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
 
 .PHONY: build
 build: ## Builds all services in this repository.
@@ -31,11 +41,21 @@ generate: install-tools ## Generate mocks, florence features and other code.
 
 .PHONY: fmt
 fmt: install-tools ## Format code.
-	@$(GOBIN)/goimports -w -local "github.com/deliveroo/" $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+	@$(GOBIN)/goimports -w -local "github.com/stephensli/" $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 .PHONY: lint
 lint: install-tools ## Lint code.
 	golangci-lint run --config ./build/.golangci.yml ./...
+
+
+.PHONY: generate-proto
+generate-proto: install-tools ## Generate protobufs.
+	bash ./proto/gen.sh
+	@$(MAKE) fmt
+
+.PHONY: lint-proto
+lint-proto: install-tools ## Lint protobufs.
+	$(GOBIN)/buf lint
 
 .PHONY: test
 test: ## Run all tests.

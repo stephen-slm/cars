@@ -1,0 +1,20 @@
+version: v1
+deps:
+  - buf.build/envoyproxy/protoc-gen-validate
+lint:
+  use:
+    - COMMENT_ENUM        # checks that enums have non-empty comments.
+    #- COMMENT_ENUM_VALUE # checks that enum values have non-empty comments.
+    #- COMMENT_FIELD      # checks that fields have non-empty comments.
+    - COMMENT_MESSAGE     # checks that messages have non-empty comments.
+    #- COMMENT_ONEOF      # checks that oneof have non-empty comments.
+    - COMMENT_RPC         # checks that RPCs have non-empty comments.
+    - COMMENT_SERVICE     # checks that services have non-empty comments.
+    - DEFAULT
+    - UNARY_RPC
+  enum_zero_value_suffix: _UNSPECIFIED
+  rpc_allow_google_protobuf_empty_requests: true
+  service_suffix: Service
+breaking:
+  use:
+    - FILE
