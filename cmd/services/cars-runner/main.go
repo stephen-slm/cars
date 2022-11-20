@@ -2,10 +2,12 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"os"
 	"os/exec"
 	"strings"
@@ -30,6 +32,19 @@ func determineExecutionError(err error) sandbox.ContainerStatus {
 	}
 
 	return sandbox.RunTimeError
+}
+
+func parseTemplateString(value string, params *sandbox.ExecutionParameters) (string, error) {
+	tmpl, err := template.New(params.ID).Parse(value)
+
+	if err != nil {
+		return "", err
+	}
+
+	result := bytes.Buffer{}
+	err = tmpl.Execute(&result, params)
+
+	return result.String(), err
 }
 
 func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (compilerOutput []string, compileTimeNano int64, err error) {
@@ -61,8 +76,15 @@ func compileProject(ctx context.Context, params *sandbox.ExecutionParameters) (c
 	timeAtExecution = time.Now()
 
 	for _, step := range params.CompileSteps {
-		// Create the command with our context
-		command := strings.Split(step, " ")
+		commandString, parseErr := parseTemplateString(step, params)
+		if parseErr != nil {
+			err = parseErr
+			return
+		}
+
+		log.Info().Str("command", commandString).Msg("test")
+
+		command := strings.Split(commandString, " ")
 		cmd := exec.CommandContext(ctx, command[0], command[1:]...)
 
 		// This time we can simply use Output() to get the result.
@@ -115,7 +137,12 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 	defer cancel()
 
 	// Create the command with our context
-	command := strings.Split(params.Run, " ")
+	parsedCommand, err := parseTemplateString(params.Run, params)
+	if err != nil {
+		return nil, err
+	}
+
+	command := strings.Split(parsedCommand, " ")
 
 	inputFile, _ := os.Open(fmt.Sprintf("/input/%s", params.StandardInput))
 	defer inputFile.Close()
@@ -136,6 +163,9 @@ func runProject(ctx context.Context, params *sandbox.ExecutionParameters) (*RunE
 	timeAtExecution = time.Now()
 
 	cmdErr := cmd.Start()
+	if cmdErr != nil {
+		return &resp, cmdErr
+	}
 
 	go func() {
 		defer close(pidDone)

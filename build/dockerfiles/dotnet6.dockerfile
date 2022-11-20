@@ -14,14 +14,14 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0
 
 COPY --from=BUILDER /runner /runner
 
-RUN mkdir /projectf
-RUN mkdir /projectc
+RUN mkdir /template-f
+RUN mkdir /template-c
 
-RUN cd /projectf && dotnet new console -lang F# -f net6.0
-RUN cd /projectc && dotnet new console -lang c# -f net6.0
+RUN cd /template-f && dotnet new console -lang F# -f net6.0
+RUN cd /template-c && dotnet new console -lang c# -f net6.0
 
-RUN rm /projectf/Program.fs
-RUN rm /projectc/Program.cs
+RUN rm /template-f/Program.fs
+RUN rm /template-c/Program.cs
 
 RUN apt-get  update
 RUN apt-get install coreutils
