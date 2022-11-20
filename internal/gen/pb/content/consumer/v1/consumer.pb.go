@@ -23,11 +23,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The response from the ping.
 type PingResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The ping message.
 	Message string `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 }
 
@@ -70,11 +72,13 @@ func (x *PingResponse) GetMessage() string {
 	return ""
 }
 
+// Used to request a usable code snippet/template for a given supported language.
 type GetTemplateRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The language which template should be returned.
 	Language string `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
 }
 
@@ -117,11 +121,14 @@ func (x *GetTemplateRequest) GetLanguage() string {
 	return ""
 }
 
+// Returns the template code for a given language. This template can compile
+// and run safely out of the box.
 type GetTemplateResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The template code for the given requested language.
 	Template string `protobuf:"bytes,1,opt,name=template,proto3" json:"template,omitempty"`
 }
 
@@ -223,11 +230,13 @@ func (x *SupportedLanguage) GetDisplayName() string {
 	return ""
 }
 
+// Contains the list of supported languages currently.
 type GetSupportedLanguagesResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The list of supported languages within the system.
 	Languages []*SupportedLanguage `protobuf:"bytes,1,rep,name=languages,proto3" json:"languages,omitempty"`
 }
 
@@ -275,8 +284,13 @@ type CompileRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The target language that is being sent. Incorrectly setting this will
+	// result in a faulted request.
 	Language string `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
-	Source   string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	// The source code that will be executed, this should be well formatted as
+	// if it was ready to be compiled. Misconfigured ro formatted code will be
+	// rejected by the runtime or compiler.
+	Source string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 	// This array of strings will be written to the standard input of the code
 	// when executing. Each array item is a line which will be written one after
 	// another.
@@ -348,11 +362,14 @@ func (x *CompileRequest) GetExpectedStandardOutData() []string {
 	return nil
 }
 
+// The response when requesting a compiled request via the queue.
 type CompileQueueResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The reference ID of the compile request. Use later to retrieve updated
+	// information regarding the state of the execution.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -395,11 +412,15 @@ func (x *CompileQueueResponse) GetId() string {
 	return ""
 }
 
+// Compile result request can be used to request updated information about the
+// state or result of the compile request.
 type CompileResultRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The id of the request, this value would have been returned by the compile
+	// execution request.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -447,15 +468,26 @@ type CompileResultResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Language        string  `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
-	Status          string  `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	TestStatus      string  `protobuf:"bytes,3,opt,name=test_status,json=testStatus,proto3" json:"test_status,omitempty"`
-	CompileMs       int64   `protobuf:"varint,4,opt,name=compile_ms,json=compileMs,proto3" json:"compile_ms,omitempty"`
-	RuntimeMs       int64   `protobuf:"varint,5,opt,name=runtime_ms,json=runtimeMs,proto3" json:"runtime_ms,omitempty"`
+	// The language which was used in to compile and execute request. This will
+	// match the request language.
+	Language string `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
+	// The resulting status of the entire request.
+	Status string `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	// The resulting test status, if a test was provided.
+	TestStatus string `protobuf:"bytes,3,opt,name=test_status,json=testStatus,proto3" json:"test_status,omitempty"`
+	// The total milliseconds taken to compile the request if it was not an
+	// interpreted language.
+	CompileMs int64 `protobuf:"varint,4,opt,name=compile_ms,json=compileMs,proto3" json:"compile_ms,omitempty"`
+	// The total milliseconds taken to run the code.
+	RuntimeMs int64 `protobuf:"varint,5,opt,name=runtime_ms,json=runtimeMs,proto3" json:"runtime_ms,omitempty"`
+	// The maximum  number of megabytes used to run the request.
 	RuntimeMemoryMb float64 `protobuf:"fixed64,6,opt,name=runtime_memory_mb,json=runtimeMemoryMb,proto3" json:"runtime_memory_mb,omitempty"`
-	Output          string  `protobuf:"bytes,7,opt,name=output,proto3" json:"output,omitempty"`
-	OutputError     string  `protobuf:"bytes,8,opt,name=output_error,json=outputError,proto3" json:"output_error,omitempty"`
-	CompilerOutput  string  `protobuf:"bytes,9,opt,name=compiler_output,json=compilerOutput,proto3" json:"compiler_output,omitempty"`
+	// The raw output of the request.
+	Output string `protobuf:"bytes,7,opt,name=output,proto3" json:"output,omitempty"`
+	// The raw error output of the request.
+	OutputError string `protobuf:"bytes,8,opt,name=output_error,json=outputError,proto3" json:"output_error,omitempty"`
+	// The raw compile output of the request, if compiled.
+	CompilerOutput string `protobuf:"bytes,9,opt,name=compiler_output,json=compilerOutput,proto3" json:"compiler_output,omitempty"`
 }
 
 func (x *CompileResultResponse) Reset() {

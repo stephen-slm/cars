@@ -38,7 +38,9 @@ service ConsumerService {
 // # Ping                ##
 // ########################
 
+// The response from the ping.
 message PingResponse {
+  // The ping message.
   string message = 1;
 }
 
@@ -46,7 +48,9 @@ message PingResponse {
 // # Templates           ##
 // ########################
 
+// Used to request a usable code snippet/template for a given supported language.
 message GetTemplateRequest {
+  // The language which template should be returned.
   string language = 1 [(validate.rules).string = {
     in: [
       "python2",
@@ -67,7 +71,10 @@ message GetTemplateRequest {
   }];
 }
 
+// Returns the template code for a given language. This template can compile
+// and run safely out of the box.
 message GetTemplateResponse {
+  // The template code for the given requested language.
   string template = 1;
 }
 
@@ -84,7 +91,9 @@ message SupportedLanguage {
   string display_name = 2;
 }
 
+// Contains the list of supported languages currently.
 message GetSupportedLanguagesResponse {
+  // The list of supported languages within the system.
   repeated SupportedLanguage languages = 1;
 }
 
@@ -93,6 +102,8 @@ message GetSupportedLanguagesResponse {
 // ########################
 
 message CompileRequest {
+  // The target language that is being sent. Incorrectly setting this will
+  // result in a faulted request.
   string language = 1 [(validate.rules).string = {
     in: [
       "python2",
@@ -112,6 +123,9 @@ message CompileRequest {
     ]
   }];
 
+  // The source code that will be executed, this should be well formatted as
+  // if it was ready to be compiled. Misconfigured ro formatted code will be
+  // rejected by the runtime or compiler.
   string source = 2 [(validate.rules).string = {min_len: 5, max_len: 1024}];
 
   // This array of strings will be written to the standard input of the code
@@ -126,7 +140,10 @@ message CompileRequest {
   repeated string expected_standard_out_data = 4;
 }
 
+// The response when requesting a compiled request via the queue.
 message CompileQueueResponse {
+  // The reference ID of the compile request. Use later to retrieve updated
+  // information regarding the state of the execution.
   string id = 1;
 }
 
@@ -134,21 +151,33 @@ message CompileQueueResponse {
 // # Get Compile Result  ##
 // ########################
 
+// Compile result request can be used to request updated information about the
+// state or result of the compile request.
 message CompileResultRequest {
+  // The id of the request, this value would have been returned by the compile
+  // execution request.
   string id = 1;
 }
 
 message CompileResultResponse {
+  // The language which was used in to compile and execute request. This will
+  // match the request language.
   string language = 1;
+  // The resulting status of the entire request.
   string status = 2;
+  // The resulting test status, if a test was provided.
   string test_status = 3;
-
+  // The total milliseconds taken to compile the request if it was not an
+  // interpreted language.
   int64 compile_ms = 4;
+  // The total milliseconds taken to run the code.
   int64 runtime_ms = 5;
-
+  // The maximum  number of megabytes used to run the request.
   double runtime_memory_mb = 6;
-
+  // The raw output of the request.
   string output = 7;
+  // The raw error output of the request.
   string output_error = 8;
+  // The raw compile output of the request, if compiled.
   string compiler_output = 9;
 }

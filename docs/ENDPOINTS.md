@@ -30,12 +30,12 @@
 <a name="content-consumer-v1-CompileQueueResponse"></a>
 
 ### CompileQueueResponse
-
+The response when requesting a compiled request via the queue.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
+| id | [string](#string) |  | The reference ID of the compile request. Use later to retrieve updated information regarding the state of the execution. |
 
 
 
@@ -50,8 +50,8 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| language | [string](#string) |  |  |
-| source | [string](#string) |  |  |
+| language | [string](#string) |  | The target language that is being sent. Incorrectly setting this will result in a faulted request. |
+| source | [string](#string) |  | The source code that will be executed, this should be well formatted as if it was ready to be compiled. Misconfigured ro formatted code will be rejected by the runtime or compiler. |
 | standard_in_data | [string](#string) | repeated | This array of strings will be written to the standard input of the code when executing. Each array item is a line which will be written one after another. |
 | expected_standard_out_data | [string](#string) | repeated | This is an array of expected output data, including data here that will result in a validation check on completion. If no items are added to the array then the status endpoint will return NoTest for the test status. Otherwise, a value related to the test result. |
 
@@ -63,12 +63,13 @@
 <a name="content-consumer-v1-CompileResultRequest"></a>
 
 ### CompileResultRequest
-
+Compile result request can be used to request updated information about the
+state or result of the compile request.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
+| id | [string](#string) |  | The id of the request, this value would have been returned by the compile execution request. |
 
 
 
@@ -83,15 +84,15 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| language | [string](#string) |  |  |
-| status | [string](#string) |  |  |
-| test_status | [string](#string) |  |  |
-| compile_ms | [int64](#int64) |  |  |
-| runtime_ms | [int64](#int64) |  |  |
-| runtime_memory_mb | [double](#double) |  |  |
-| output | [string](#string) |  |  |
-| output_error | [string](#string) |  |  |
-| compiler_output | [string](#string) |  |  |
+| language | [string](#string) |  | The language which was used in to compile and execute request. This will match the request language. |
+| status | [string](#string) |  | The resulting status of the entire request. |
+| test_status | [string](#string) |  | The resulting test status, if a test was provided. |
+| compile_ms | [int64](#int64) |  | The total milliseconds taken to compile the request if it was not an interpreted language. |
+| runtime_ms | [int64](#int64) |  | The total milliseconds taken to run the code. |
+| runtime_memory_mb | [double](#double) |  | The maximum number of megabytes used to run the request. |
+| output | [string](#string) |  | The raw output of the request. |
+| output_error | [string](#string) |  | The raw error output of the request. |
+| compiler_output | [string](#string) |  | The raw compile output of the request, if compiled. |
 
 
 
@@ -101,12 +102,12 @@
 <a name="content-consumer-v1-GetSupportedLanguagesResponse"></a>
 
 ### GetSupportedLanguagesResponse
-
+Contains the list of supported languages currently.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| languages | [SupportedLanguage](#content-consumer-v1-SupportedLanguage) | repeated |  |
+| languages | [SupportedLanguage](#content-consumer-v1-SupportedLanguage) | repeated | The list of supported languages within the system. |
 
 
 
@@ -116,12 +117,12 @@
 <a name="content-consumer-v1-GetTemplateRequest"></a>
 
 ### GetTemplateRequest
-
+Used to request a usable code snippet/template for a given supported language.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| language | [string](#string) |  |  |
+| language | [string](#string) |  | The language which template should be returned. |
 
 
 
@@ -131,12 +132,13 @@
 <a name="content-consumer-v1-GetTemplateResponse"></a>
 
 ### GetTemplateResponse
-
+Returns the template code for a given language. This template can compile
+and run safely out of the box.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| template | [string](#string) |  |  |
+| template | [string](#string) |  | The template code for the given requested language. |
 
 
 
@@ -146,12 +148,12 @@
 <a name="content-consumer-v1-PingResponse"></a>
 
 ### PingResponse
-
+The response from the ping.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| message | [string](#string) |  |  |
+| message | [string](#string) |  | The ping message. |
 
 
 
