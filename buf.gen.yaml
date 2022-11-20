@@ -13,3 +13,6 @@ plugins:
     opt:
       - paths=source_relative
       - lang=go
+  - name: doc
+    out: docs
+    opt: markdown,ENDPOINTS.md

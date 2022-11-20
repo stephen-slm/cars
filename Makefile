@@ -16,6 +16,7 @@ install-tools: $(GOBIN) ## Install all tools into bin directory.
 	@go install github.com/golang/mock/mockgen
 	@go install google.golang.org/protobuf/cmd/protoc-gen-go
 	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	@go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
 
 .PHONY: build
 build: ## Builds all services in this repository.

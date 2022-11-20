@@ -2,21 +2,18 @@ package main
 
 import (
 	"net"
-	"net/http"
 	"os"
 	"path/filepath"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
-	"golang.org/x/sync/errgroup"
 
 	"compile-and-run-sandbox/internal/api/consumer"
 	v1 "compile-and-run-sandbox/internal/gen/pb/content/consumer/v1"
 
 	"google.golang.org/grpc"
 
-	"compile-and-run-sandbox/internal/config"
 	"compile-and-run-sandbox/internal/files"
 	"compile-and-run-sandbox/internal/parser"
 	"compile-and-run-sandbox/internal/sandbox"
@@ -27,9 +24,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	enTranslations "github.com/go-playground/validator/v10/translations/en"
-
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 
 	"compile-and-run-sandbox/internal/queue"
 	"compile-and-run-sandbox/internal/repository"
@@ -93,8 +87,6 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to create file handler")
 	}
 
-	r := mux.NewRouter()
-
 	validate := validator.New()
 	translator := getTranslator()
 
@@ -104,6 +96,9 @@ func main() {
 	_ = enTranslations.RegisterDefaultTranslations(validate, translator)
 
 	lis, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to listen")
+	}
 
 	server := grpc.NewServer(
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
@@ -120,30 +115,8 @@ func main() {
 		Queue:       queueRunner,
 	})
 
-	if config.GetCurrentEnvironment() == config.DevelopmentEnvironment {
-		r.PathPrefix("/").Handler(http.FileServer(http.Dir("./assets/sample-site/")))
-	}
-
 	log.Info().Msg("listening on :8080")
-	r.Use(mux.CORSMethodMiddleware(r))
-
-	credentialsOk := handlers.AllowCredentials()
-	originsOk := handlers.AllowedOrigins([]string{"*"})
-	headersOk := handlers.AllowedHeaders([]string{"Content-Type"})
-	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
-
-	handler := handlers.CORS(credentialsOk, headersOk, originsOk, methodsOk)(r)
-	g := errgroup.Group{}
-
-	g.Go(func() error {
-		return server.Serve(lis)
-	})
-
-	g.Go(func() error {
-		return http.Serve(lis, handler)
-	})
-
-	if listenErr := g.Wait(); listenErr != nil {
+	if listenErr := server.Serve(lis); listenErr != nil {
 		log.Fatal().Err(listenErr).Msg("failed to listen")
 	}
 }

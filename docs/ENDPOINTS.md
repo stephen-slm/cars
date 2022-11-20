@@ -1,164 +1,219 @@
-Below includes the documentation of the existing API endpoints which are exposed from the project.
+# Protocol Documentation
+<a name="top"></a>
 
-- [Compile](#compile)
-	* [Compile Request](#compile-request)
-		+ [Request](#request)
-		+ [Response](#response)
-		+ [stdin data](#stdin-data)
-		+ [expected stdout data](#expected-stdout-data)
-	* [Compile Response](#compile-response)
-		+ [Response](#response-1)
-		+ [Possible Status Values](#possible-status-values)
-		+ [Possible Test Status Values](#possible-test-status-values)
-- [Languages And Templates](#languages-and-templates)
-	* [Supported Languages](#supported-languages)
-	* [Language Template](#language-template)
+## Table of Contents
 
-# Compile
+- [content/consumer/v1/consumer.proto](#content_consumer_v1_consumer-proto)
+    - [CompileQueueResponse](#content-consumer-v1-CompileQueueResponse)
+    - [CompileRequest](#content-consumer-v1-CompileRequest)
+    - [CompileResultRequest](#content-consumer-v1-CompileResultRequest)
+    - [CompileResultResponse](#content-consumer-v1-CompileResultResponse)
+    - [GetSupportedLanguagesResponse](#content-consumer-v1-GetSupportedLanguagesResponse)
+    - [GetTemplateRequest](#content-consumer-v1-GetTemplateRequest)
+    - [GetTemplateResponse](#content-consumer-v1-GetTemplateResponse)
+    - [PingResponse](#content-consumer-v1-PingResponse)
+    - [SupportedLanguage](#content-consumer-v1-SupportedLanguage)
+  
+    - [ConsumerService](#content-consumer-v1-ConsumerService)
+  
+- [Scalar Value Types](#scalar-value-types)
 
-## Compile Request
 
-This is the core compile request endpoint. Calling into this will trigger the flow to run the user-submitted code.
 
-URL: `POST - /compile/`  
-Response: Get the request's id, and use this to gather updates on the execution.
+<a name="content_consumer_v1_consumer-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
 
-Example: `POST - /compile/`
+## content/consumer/v1/consumer.proto
 
-### Request
 
-```JSON
-{
-  "language": "string",
-  "source_code": "string",
-  "stdin_data": [
-	"string"
-  ],
-  "expected_stdout_data": [
-	"string"
-  ]
-}
-```
 
-### Response
+<a name="content-consumer-v1-CompileQueueResponse"></a>
 
-```JSON
-{
-  "id": "7197011b-7744-486c-b3e2-e86fd42d0a62"
-}
-```
+### CompileQueueResponse
 
-### stdin data
 
-This array of strings will be written to the standard input of the code when executing. Each array item is a line which
-will be written one after another.
 
-### expected stdout data
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
 
-This is an array of expected output data, including data here that will result in a validation check on completion. If
-no items are added to the array then the status endpoint will return `NoTest` for the test status. Otherwise, a value
-related to the test result.
 
-## Compile Response
 
-This endpoint is required to be called after requesting to compile, all details about the running state and the final
-output of the compiling and execution are from this.
 
-URL: `GET - /compile/{id}`  
-Response: Get the state of a compile request based on the compile request-id.
 
-Example: `GET - /compile/56ea6176-d23f-4561-b937-b16c6a8434ef`
 
-### Response
+<a name="content-consumer-v1-CompileRequest"></a>
 
-```json
-{
-  "status": "string",
-  "test_status": "string",
-  "compile_ms": 0,
-  "runtime_ms": 0,
-  "runtime_memory_mb": 0,
-  "language": "string",
-  "output": "string",
-  "output_error": "string"
-}
-```
+### CompileRequest
 
-### Possible Status Values
 
-* NotRan
-* Created
-* Running
-* Killing
-* Killed
-* Finished
-* MemoryConstraintExceeded
-* TimeLimitExceeded
-* ProvidedTestFailed
-* CompilationFailed
-* RunTimeError
-* NonDeterministicError
 
-### Possible Test Status Values
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| language | [string](#string) |  |  |
+| source | [string](#string) |  |  |
+| standard_in_data | [string](#string) | repeated | This array of strings will be written to the standard input of the code when executing. Each array item is a line which will be written one after another. |
+| expected_standard_out_data | [string](#string) | repeated | This is an array of expected output data, including data here that will result in a validation check on completion. If no items are added to the array then the status endpoint will return NoTest for the test status. Otherwise, a value related to the test result. |
 
-* NoTest
-* TestNotRan
-* TestFailed
-* TestPassed
 
-# Languages And Templates
 
-API endpoints to support the gathering and working with language templates and general language information.
 
-## Supported Languages
 
-This endpoint will return a list of languages that can be exposed to the user. This response contains a display name
-for the language that will contain compiler information if important and will also return the code. The code is
-the value sent to the server when requesting to compile and run.
 
-URL: `GET - /languages`
+<a name="content-consumer-v1-CompileResultRequest"></a>
 
-```json
-[
-  {
-	"language_code": "csharp",
-	"display_name": "C# (dotnet6)"
-  },
-  {
-	"language_code": "node",
-	"display_name": "NodeJs (Javascript)"
-  },
-  {
-	"language_code": "python",
-	"display_name": "Python (pypy)"
-  },
-  {
-	"language_code": "rust",
-	"display_name": "Rust (rustc)"
-  },
-  {
-	"language_code": "go",
-	"display_name": "Golang"
-  }
-]
-```
+### CompileResultRequest
 
-## Language Template
 
-This endpoint is designed to allow consumers of the platform to serve the user with a template they can start from. This
-is more important for languages that require selective formatting or a `main` function. An example of these languages
-would be C++, and C.
 
-URL: `GET - /languages/{language}/template`  
-Response: A usable template for that language that will run when attempting to compile
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
 
-Example: `GET - /languages/cpp/template`
 
-```cpp
-#include <iostream>
 
-int main() {
-    std::cout << "Hello World!";
-    return 0;
-}
-```
+
+
+
+<a name="content-consumer-v1-CompileResultResponse"></a>
+
+### CompileResultResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| language | [string](#string) |  |  |
+| status | [string](#string) |  |  |
+| test_status | [string](#string) |  |  |
+| compile_ms | [int64](#int64) |  |  |
+| runtime_ms | [int64](#int64) |  |  |
+| runtime_memory_mb | [double](#double) |  |  |
+| output | [string](#string) |  |  |
+| output_error | [string](#string) |  |  |
+| compiler_output | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="content-consumer-v1-GetSupportedLanguagesResponse"></a>
+
+### GetSupportedLanguagesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| languages | [SupportedLanguage](#content-consumer-v1-SupportedLanguage) | repeated |  |
+
+
+
+
+
+
+<a name="content-consumer-v1-GetTemplateRequest"></a>
+
+### GetTemplateRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| language | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="content-consumer-v1-GetTemplateResponse"></a>
+
+### GetTemplateResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| template | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="content-consumer-v1-PingResponse"></a>
+
+### PingResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| message | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="content-consumer-v1-SupportedLanguage"></a>
+
+### SupportedLanguage
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| language_code | [string](#string) |  | The language code send during the compile request, this is not the same as the display name. This is also the code used to get the template. |
+| display_name | [string](#string) |  | The display name the user can be shown and will understand for example the display name could be C# and the code would be csharp. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="content-consumer-v1-ConsumerService"></a>
+
+### ConsumerService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Ping | [.google.protobuf.Empty](#google-protobuf-Empty) | [PingResponse](#content-consumer-v1-PingResponse) |  |
+| GetTemplate | [GetTemplateRequest](#content-consumer-v1-GetTemplateRequest) | [GetTemplateResponse](#content-consumer-v1-GetTemplateResponse) | GetTemplate is designed to allow consumers of the platform to serve the user with a template they can start from. This is more important for languages that require selective formatting or a main function. An example of these languages would be C&#43;&#43;, and C. |
+| GetSupportedLanguages | [.google.protobuf.Empty](#google-protobuf-Empty) | [GetSupportedLanguagesResponse](#content-consumer-v1-GetSupportedLanguagesResponse) | GetSupportedLanguages will return a list of languages that can be exposed to the user. This response contains a display name for the language that will contain compiler information if important and will also return the code. The code is the value sent to the server when requesting to compile and run. |
+| CreateCompileRequest | [CompileRequest](#content-consumer-v1-CompileRequest) | [CompileQueueResponse](#content-consumer-v1-CompileQueueResponse) | CompileQueueRequest is the core compile request endpoint. Calling into this will trigger the flow to run the user-submitted code. |
+| GetCompileResultRequest | [CompileResultRequest](#content-consumer-v1-CompileResultRequest) | [CompileResultResponse](#content-consumer-v1-CompileResultResponse) | GetCompileResultRequest is required to be called after requesting to compile, all details about the running state and the final output of the compiling and execution are from this. |
+
+ 
+
+
+
+## Scalar Value Types
+
+| .proto Type | Notes | C++ | Java | Python | Go | C# | PHP | Ruby |
+| ----------- | ----- | --- | ---- | ------ | -- | -- | --- | ---- |
+| <a name="double" /> double |  | double | double | float | float64 | double | float | Float |
+| <a name="float" /> float |  | float | float | float | float32 | float | float | Float |
+| <a name="int32" /> int32 | Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint32 instead. | int32 | int | int | int32 | int | integer | Bignum or Fixnum (as required) |
+| <a name="int64" /> int64 | Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint64 instead. | int64 | long | int/long | int64 | long | integer/string | Bignum |
+| <a name="uint32" /> uint32 | Uses variable-length encoding. | uint32 | int | int/long | uint32 | uint | integer | Bignum or Fixnum (as required) |
+| <a name="uint64" /> uint64 | Uses variable-length encoding. | uint64 | long | int/long | uint64 | ulong | integer/string | Bignum or Fixnum (as required) |
+| <a name="sint32" /> sint32 | Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int32s. | int32 | int | int | int32 | int | integer | Bignum or Fixnum (as required) |
+| <a name="sint64" /> sint64 | Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int64s. | int64 | long | int/long | int64 | long | integer/string | Bignum |
+| <a name="fixed32" /> fixed32 | Always four bytes. More efficient than uint32 if values are often greater than 2^28. | uint32 | int | int | uint32 | uint | integer | Bignum or Fixnum (as required) |
+| <a name="fixed64" /> fixed64 | Always eight bytes. More efficient than uint64 if values are often greater than 2^56. | uint64 | long | int/long | uint64 | ulong | integer/string | Bignum |
+| <a name="sfixed32" /> sfixed32 | Always four bytes. | int32 | int | int | int32 | int | integer | Bignum or Fixnum (as required) |
+| <a name="sfixed64" /> sfixed64 | Always eight bytes. | int64 | long | int/long | int64 | long | integer/string | Bignum |
+| <a name="bool" /> bool |  | bool | boolean | boolean | bool | bool | boolean | TrueClass/FalseClass |
+| <a name="string" /> string | A string must always contain UTF-8 encoded or 7-bit ASCII text. | string | String | str/unicode | string | string | string | String (UTF-8) |
+| <a name="bytes" /> bytes | May contain any arbitrary sequence of bytes. | string | ByteString | str | []byte | ByteString | string | String (ASCII-8BIT) |
+
