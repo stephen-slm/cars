@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/aws/aws-sdk-go v1.44.142
 	github.com/bufbuild/buf v1.9.0
-	github.com/docker/docker v20.10.21+incompatible
+	github.com/docker/docker v20.10.23+incompatible
 	github.com/envoyproxy/protoc-gen-validate v0.3.0-java
 	github.com/fullstorydev/grpcurl v1.8.7
 	github.com/go-playground/locales v0.14.0
