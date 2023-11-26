@@ -1,4 +1,4 @@
-FROM golang:1.19-buster as BUILDER
+FROM golang:1.21-bullseye as BUILDER
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM rust:1.65-buster
+FROM rust:1.74-buster
 
 COPY --from=BUILDER /runner /runner
 

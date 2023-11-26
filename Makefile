@@ -64,7 +64,7 @@ test: ## Run all tests.
 
 .PHONY: test/e2e
 test/e2e: ## Run all tests.
-	go test -race --tags=e2e ./...
+	go test -race -tags e2e ./...
 
 
 .PHONY: test-coverage

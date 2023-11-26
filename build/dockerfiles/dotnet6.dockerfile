@@ -1,4 +1,4 @@
-FROM golang:1.19-buster as BUILDER
+FROM golang:1.21-bullseye as BUILDER
 
 WORKDIR /app
 
