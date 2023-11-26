@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM node:16-buster
+FROM node:20-bullseye
 
 COPY --from=BUILDER /runner /runner
 

@@ -161,8 +161,8 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"fsharp": {
-		Dockerfile: "dotnet6",
-		Compiler:   "dotnet6",
+		Dockerfile: "dotnet",
+		Compiler:   "dotnet",
 		Language:   "F#",
 		runSteps:   "/{{.ID}}-output/template-f",
 		compileSteps: []string{
@@ -171,7 +171,7 @@ var Compilers = map[string]*LanguageCompiler{
 			"dotnet build --configuration Release -o /{{.ID}}-output/ /{{.ID}}/",
 		},
 		Interpreter:        false,
-		VirtualMachineName: "virtual_machine_dotnet6",
+		VirtualMachineName: "virtual_machine_dotnet",
 		SourceFile:         "solution.fs",
 		OutputFile:         "output",
 		OutputErrFile:      "output_error",
@@ -179,8 +179,8 @@ var Compilers = map[string]*LanguageCompiler{
 		InputFile:          "input",
 	},
 	"csharp": {
-		Dockerfile: "dotnet6",
-		Compiler:   "dotnet6",
+		Dockerfile: "dotnet",
+		Compiler:   "dotnet",
 		Language:   "C#",
 		runSteps:   "/{{.ID}}-output/template-c",
 		compileSteps: []string{
@@ -189,7 +189,7 @@ var Compilers = map[string]*LanguageCompiler{
 			"dotnet build --configuration Release -o /{{.ID}}-output/ /{{.ID}}/",
 		},
 		Interpreter:        false,
-		VirtualMachineName: "virtual_machine_dotnet6",
+		VirtualMachineName: "virtual_machine_dotnet",
 		SourceFile:         "solution.cs",
 		OutputFile:         "output",
 		OutputErrFile:      "output_error",

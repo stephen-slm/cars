@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM gcc:9.5-buster
+FROM gcc:12.3-bullseye
 
 COPY --from=BUILDER /runner /runner
 

@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM php:8.1-fpm-buster
+FROM php:8.2-fpm-bullseye
 
 COPY --from=BUILDER /runner /runner
 
