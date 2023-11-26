@@ -17,11 +17,12 @@ require (
 	github.com/namsral/flag v1.7.4-pre
 	github.com/nsqio/go-nsq v1.1.0
 	github.com/pkg/errors v0.9.1
+	github.com/pseudomuto/protoc-gen-doc v1.5.1
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.8.1
 	google.golang.org/grpc v1.51.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
-	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8
+	google.golang.org/protobuf v1.31.0
 	gorm.io/driver/postgres v1.4.5
 	gorm.io/gorm v1.24.1-0.20221019064659-5dd2bb482755
 )
@@ -89,7 +90,6 @@ require (
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pkg/profile v1.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/pseudomuto/protoc-gen-doc v1.5.1 // indirect
 	github.com/pseudomuto/protokit v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
