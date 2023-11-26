@@ -22,3 +22,4 @@ rm -rf "./internal/gen/pb" && mkdir -p "./internal/gen/pb"
 $("${GOBIN}"/buf generate)
 
 find $PB_PATH -iname "*.go"
+
