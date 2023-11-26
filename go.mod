@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/aws/aws-sdk-go v1.44.142
 	github.com/bufbuild/buf v1.9.0
-	github.com/docker/docker v20.10.21+incompatible
+	github.com/docker/docker v24.0.7+incompatible
 	github.com/envoyproxy/protoc-gen-validate v1.0.2
 	github.com/fullstorydev/grpcurl v1.8.9
 	github.com/go-playground/locales v0.14.0
