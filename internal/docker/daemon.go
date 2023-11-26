@@ -51,7 +51,6 @@ func IsGvisorInstalled() bool {
 		_, ok := daemon.Runtimes[GVisorRuntime]
 
 		installed = ok
-		return
 	})
 
 	return installed

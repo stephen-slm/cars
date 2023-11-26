@@ -229,7 +229,7 @@ func (d *Container) prepare(_ context.Context) error {
 
 	if d.request.Test != nil {
 		for _, s := range d.request.Test.StdinData {
-			if _, writeErr := inputFile.WriteString(fmt.Sprintf("%s\n", s)); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(inputFile, "%s\n", s); writeErr != nil {
 				return errors.Wrap(writeErr, "failed to write standard in data")
 			}
 		}

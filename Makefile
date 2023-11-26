@@ -45,7 +45,7 @@ fmt: install-tools ## Format code.
 
 .PHONY: lint
 lint: install-tools ## Lint code.
-	golangci-lint run --config ./build/.golangci.yml ./...
+	@$(GOBIN)/golangci-lint run --config ./build/.golangci.yml ./...
 
 
 .PHONY: generate-proto
