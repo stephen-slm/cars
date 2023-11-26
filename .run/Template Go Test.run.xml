@@ -3,8 +3,11 @@
     <module name="cars" />
     <target name="WSL - Ubuntu" />
     <working_directory value="$PROJECT_DIR$" />
-    <go_parameters value="--tags=e2e" />
+    <go_parameters value="-race" />
+    <useCustomBuildTags value="true" />
+    <sudo value="true" />
     <kind value="DIRECTORY" />
+    <package value="compile-and-run-sandbox" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$" />
     <framework value="gotest" />

@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -39,6 +40,7 @@ func TestGetCurrentEnvironment(t *testing.T) {
 				currentEnvironment = ""
 			}()
 
+			envOnce = sync.Once{}
 			_ = os.Setenv("environment", tt.environmentFlag)
 
 			if got := GetCurrentEnvironment(); got != tt.want {

@@ -7,12 +7,12 @@ install-hooks: ## Install git hooks
 
 .PHONY: install-tools
 install-tools: $(GOBIN) ## Install all tools into bin directory.
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
-	@go install github.com/incu6us/goimports-reviser/v3@v3.1.1
-	@go install mvdan.cc/gofumpt@v0.4.0
-	@go install github.com/bufbuild/buf/cmd/buf@v1.9.0
-	@go install github.com/envoyproxy/protoc-gen-validate@v0.6.13
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
+	@go install mvdan.cc/gofumpt@v0.5.0
+	@go install github.com/bufbuild/buf/cmd/buf@v1.28.1
+	@go install github.com/envoyproxy/protoc-gen-validate@v1.0.2
 
+	@go install golang.org/x/tools/cmd/goimports
 	@go install github.com/golang/mock/mockgen
 	@go install google.golang.org/protobuf/cmd/protoc-gen-go
 	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
@@ -45,7 +45,7 @@ fmt: install-tools ## Format code.
 
 .PHONY: lint
 lint: install-tools ## Lint code.
-	golangci-lint run --config ./build/.golangci.yml ./...
+	@$(GOBIN)/golangci-lint run --config ./build/.golangci.yml ./...
 
 
 .PHONY: generate-proto
@@ -60,6 +60,12 @@ lint-proto: install-tools ## Lint protobufs.
 .PHONY: test
 test: ## Run all tests.
 	go test -race ./...
+
+
+.PHONY: test/e2e
+test/e2e: ## Run all tests.
+	go test -race -tags e2e ./...
+
 
 .PHONY: test-coverage
 test-coverage: ## Run all tests and check test coverage

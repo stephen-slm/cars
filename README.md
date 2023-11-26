@@ -43,20 +43,20 @@ untrusted code inside a container with https://gvisor.dev/, tracking execution p
 
 | Language | Version      | Url                          | Time | Memory |
 |----------|--------------|------------------------------|------|--------|
-| C        | GCC 9.5.x    | https://gcc.gnu.org          | ✅️   | ✅️     |
-| C++      | GCC 9.5.x    | https://gcc.gnu.org          | ✅️   | ✅️     |
-| C#       | .NET 6.0     | https://dotnet.microsoft.com | ✅️   | ✅️ ️    |
-| F#       | .NET 6.0     | https://dotnet.microsoft.com | ✅️   | ✅️     |
-| Java     | OpenJDK 18.0 | https://openjdk.java.net     | ✅️   | ✅️     |
-| Kotlin   | 1.7.0        | https://kotlinlang.org/      | ✅️   | ✅️     |
+| C        | GCC 12.3.x   | https://gcc.gnu.org          | ✅️   | ✅️     |
+| C++      | GCC 12.3.x   | https://gcc.gnu.org          | ✅️   | ✅️     |
+| C#       | .NET 8.0     | https://dotnet.microsoft.com | ✅️   | ✅️ ️    |
+| F#       | .NET 8.0     | https://dotnet.microsoft.com | ✅️   | ✅️     |
+| Java     | OpenJDK 21.0 | https://openjdk.java.net     | ✅️   | ✅️     |
+| Kotlin   | 1.9.21       | https://kotlinlang.org/      | ✅️   | ✅️     |
 | Scala    | 3.1.2        | https://www.scala-lang.org/  | ✅️   | ✅️     |
-| NodeJs   | 16.x.x       | https://nodejs.org           | ✅️   | ✅️     |
+| NodeJs   | 20.x.x       | https://nodejs.org           | ✅️   | ✅️     |
 | Python2  | 2.7.x        | https://pypy.org             | ✅️   | ✅️     |
-| Python3  | 3.9.x        | https://pypy.org             | ✅️   | ✅️     |
-| Go       | 1.19.x       | https://go.dev               | ✅️   | ✅️     |
-| Ruby     | 3.1.x        | https://ruby-lang.org        | ✅️   | ✅️     |
-| Rust     | 1.65.x       | https://rust-lang.org        | ✅️   | ✅️     |
-| PHP      | 8.1.x        | https://www.php.net/         | ✅️   | ✅️     |
+| Python3  | 3.10.x       | https://pypy.org             | ✅️   | ✅️     |
+| Go       | 1.21.x       | https://go.dev               | ✅️   | ✅️     |
+| Ruby     | 3.2.x        | https://ruby-lang.org        | ✅️   | ✅️     |
+| Rust     | 1.74.x       | https://rust-lang.org        | ✅️   | ✅️     |
+| PHP      | 8.2.x        | https://www.php.net/         | ✅️   | ✅️     |
 
 ## gVisor (https://gvisor.dev/)
 

@@ -1,4 +1,4 @@
-FROM golang:1.19-buster as BUILDER
+FROM golang:1.21-bullseye as BUILDER
 
 WORKDIR /app
 
@@ -10,10 +10,10 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM openjdk:18-buster
+FROM openjdk:21-bullseye
 
-ARG SCALA_VERSION="3.1.2"
-ARG KOTLIN_VERSION="1.7.0"
+ARG SCALA_VERSION="3.3.1"
+ARG KOTLIN_VERSION="1.9.21"
 
 # Installing basic packages
 RUN apt-get update && \

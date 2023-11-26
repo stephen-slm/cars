@@ -1,4 +1,4 @@
-FROM golang:1.19-buster as BUILDER
+FROM golang:1.21-bullseye as BUILDER
 
 WORKDIR /app
 
@@ -10,9 +10,10 @@ COPY . .
 
 RUN go build -o /runner ./cmd/services/cars-runner/main.go
 
-FROM gcc:9.5-buster
+FROM gcc:12.3-bullseye
 
 COPY --from=BUILDER /runner /runner
 
 RUN apt-get update
 RUN apt-get install coreutils
+
