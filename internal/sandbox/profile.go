@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"compile-and-run-sandbox/internal/config"
@@ -87,13 +88,17 @@ var profiles = map[string]*Profile{
 	},
 }
 
+var gvisorOnce sync.Once
+
 // disableGVisorCheckWrapper checks to see if GVisor is installed and if it is
 // not installed then the runtime will be reset to the default.
 func disableGVisorCheckWrapper(profile *Profile) *Profile {
-	if !docker.IsGvisorInstalled() {
-		profile.Runtime = Default
-	}
+	gvisorOnce.Do(func() {
+		if !docker.IsGvisorInstalled() {
+			profile.Runtime = Default
+		}
 
+	})
 	return profile
 }
 

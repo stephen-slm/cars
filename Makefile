@@ -61,6 +61,12 @@ lint-proto: install-tools ## Lint protobufs.
 test: ## Run all tests.
 	go test -race ./...
 
+
+.PHONY: test/e2e
+test/e2e: ## Run all tests.
+	go test -race --tags=e2e ./...
+
+
 .PHONY: test-coverage
 test-coverage: ## Run all tests and check test coverage
 	@go test -coverprofile=coverage.out ./... ; \
