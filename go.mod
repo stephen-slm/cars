@@ -3,7 +3,7 @@ module compile-and-run-sandbox
 go 1.21
 
 require (
-	github.com/aws/aws-sdk-go v1.48.3
+	github.com/aws/aws-sdk-go v1.48.16
 	github.com/bufbuild/buf v1.28.1
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/envoyproxy/protoc-gen-validate v1.0.2
